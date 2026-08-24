@@ -295,7 +295,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ### 5c — AuditLog Schemas
 
-- [ ] **Task 5.9:** Create `schemas/audit_log.py`. Define `AuditLogResponse` as a
+- [x] **Task 5.9:** Create `schemas/audit_log.py`. Define `AuditLogResponse` as a
   Pydantic model with fields: `id: int`, `actor_id: int`, `action: str`,
   `entity_type: str`, `entity_id: int`, `payload_before: str | None`,
   `payload_after: str | None`, `created_at: datetime`.
