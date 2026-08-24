@@ -1,0 +1,16 @@
+{
+  "login.title": "تسجيل الدخول",
+  "login.username_label": "اسم المستخدم",
+  "login.password_label": "كلمة المرور",
+  "login.submit_button": "تسجيل الدخول",
+  "login.error_invalid_credentials": "اسم المستخدم أو كلمة المرور غير صحيحة.",
+  "login.error_account_inactive": "هذا الحساب غير نشط. يرجى التواصل مع مسؤول النظام.",
+  "login.error_username_required": "اسم المستخدم مطلوب.",
+  "login.error_password_required": "كلمة المرور مطلوبة.",
+  "nav.logout": "تسجيل الخروج",
+  "errors.unauthorized": "غير مصرح بالدخول. يرجى تسجيل الدخول أولاً.",
+  "errors.forbidden": "ليس لديك الصلاحية للوصول إلى هذه الصفحة.",
+  "errors.not_found": "المورد المطلوب غير موجود.",
+  "errors.server_error": "حدث خطأ داخلي في الخادم. يرجى المحاولة لاحقاً.",
+  "errors.db_unavailable": "قاعدة البيانات غير متوفرة حالياً. يرجى المحاولة لاحقاً."
+}
