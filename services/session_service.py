@@ -8,7 +8,11 @@ from models.parking_session import ParkingSession, SessionStatus
 from repositories.session_repo import ParkingSessionRepository
 from services.audit_service import AuditService
 from services.card_service import CardService
-from services.exceptions import SessionNotFoundError, SessionNotActiveError
+from services.exceptions import (
+    SessionNotFoundError,
+    SessionNotActiveError,
+    CardAlreadyActiveError,
+)
 from services.plate_service import PlateService
 from services.pricing_calculation import PriceCalculation
 from services.pricing_service import PricingService
@@ -64,8 +68,11 @@ class SessionService:
             await self.card_service.set_status(card, CardStatus.IN_USE)
             await self.db.commit()
             await self.db.refresh(session)
-        except Exception:
+        except Exception as e:
             await self.db.rollback()
+            from sqlalchemy.exc import IntegrityError
+            if isinstance(e, IntegrityError) or "UNIQUE constraint failed" in str(e):
+                raise CardAlreadyActiveError(f"Card '{card_code}' is already active")
             raise
 
         await self.audit_service.log(
@@ -88,6 +95,7 @@ class SessionService:
     ) -> tuple[ParkingSession, PriceCalculation]:
         """Atomically closes an active parking session, computing total fees."""
         async with self._lock:
+            await self.db.rollback()  # Reset transaction to see fresh commits
             exit_shift = await self.shift_service.require_active_shift(exit_operator_id)
             session = await self.session_repo.get_by_id_for_update(session_id)
             if not session:
@@ -146,6 +154,7 @@ class SessionService:
     ) -> tuple[ParkingSession, PriceCalculation]:
         """Resolves a session in which the user lost their card, applying penalty fees."""
         async with self._lock:
+            await self.db.rollback()  # Reset transaction to see fresh commits
             shift = await self.shift_service.require_active_shift(operator_id)
             session = await self.session_repo.get_by_id_for_update(session_id)
             if not session:

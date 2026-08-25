@@ -163,6 +163,7 @@ async def test_race_condition_double_exit(async_client, db_session, auth_service
     stmt = select(ParkingSession).where(ParkingSession.id == session.id)
     res = await db_session.execute(stmt)
     sess_obj = res.scalar()
+    await db_session.refresh(sess_obj)
     assert sess_obj.status == SessionStatus.COMPLETED
 
 @pytest.mark.asyncio
