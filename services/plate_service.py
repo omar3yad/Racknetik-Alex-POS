@@ -26,8 +26,8 @@ class PlateService:
         Egyptian format: 1-3 Arabic letters followed by 1-4 Western digits, space-separated.
         """
         normalized = self.normalize(plate)
-        # Pattern: 1 to 3 Arabic letters, a single space, and 1 to 4 Western digits
-        pattern = r"^[\u0600-\u06FF]{1,3} \d{1,4}$"
+        # Pattern: 1 to 3 Arabic letters (optionally space-separated), a single space, and 1 to 4 Western digits
+        pattern = r"^[\u0600-\u06FF](\s?[\u0600-\u06FF]){0,2} \d{1,4}$"
         return bool(re.match(pattern, normalized))
 
     def search_normalized(self, plate: str) -> str:

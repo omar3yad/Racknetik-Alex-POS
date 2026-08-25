@@ -52,6 +52,7 @@ async def create_card(
 
     card = await card_repo.create(normalized)
     await db.commit()
+    await db.refresh(card)
 
     return {"data": ParkingCardResponse.model_validate(card).model_dump(mode="json")}
 
@@ -84,6 +85,8 @@ async def create_cards_bulk(
 
     cards = await card_repo.bulk_create(normalized_codes)
     await db.commit()
+    for c in cards:
+        await db.refresh(c)
 
     responses = [ParkingCardResponse.model_validate(c).model_dump(mode="json") for c in cards]
     return {
@@ -162,6 +165,7 @@ async def update_card_status(
     old_status = card.status
     card = await card_service.set_status(card, data.status)
     await db.commit()
+    await db.refresh(card)
 
     audit_service = AuditService(db)
     await audit_service.log(

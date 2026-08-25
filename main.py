@@ -34,6 +34,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.templates = templates
+
 # CORS middleware configuration
 if settings.ENVIRONMENT == "production" and "*" in settings.CORS_ORIGINS:
     raise RuntimeError("Wildcard CORS origin forbidden in production")

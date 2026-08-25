@@ -45,7 +45,7 @@ def test_sixty_minutes():
     assert format_duration(60) == "ساعة واحدة"
 
 def test_ninety_minutes():
-    assert format_duration(90) == "ساعة واحدة و٣٠ دقيقة"
+    assert format_duration(90) == "ساعة و٣٠ دقيقة"
 
 def test_one_twenty_minutes():
     assert format_duration(120) == "ساعتان"

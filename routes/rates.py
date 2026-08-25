@@ -82,6 +82,7 @@ async def create_rate(
 
     rule = await pricing_repo.create(**rule_data)
     await db.commit()
+    await db.refresh(rule)
 
     return {"data": PricingRuleResponse.model_validate(rule).model_dump(mode="json")}
 
@@ -102,6 +103,7 @@ async def activate_rate(
         )
 
     await db.commit()
+    await db.refresh(rule)
 
     audit_service = AuditService(db)
     await audit_service.log(

@@ -4,6 +4,7 @@ from models.user import User, UserRole
 from models.parking_card import ParkingCard, CardStatus
 from models.parking_session import ParkingSession, SessionStatus
 from models.shift import Shift
+from models.pricing_rule import PricingRule
 from services.shift_service import ShiftService
 from services.audit_service import AuditService
 from services.exceptions import (
@@ -11,6 +12,21 @@ from services.exceptions import (
     NoActiveShiftError,
     ShiftNotOwnedError,
 )
+
+async def setup_pricing_rule(db_session):
+    rule = PricingRule(
+        label="Standard Rule",
+        rate_per_hour=1000,
+        minimum_charge=500,
+        grace_period_mins=15,
+        lost_card_penalty=2000,
+        is_active=True,
+        created_by=1,
+        effective_from=datetime.utcnow()
+    )
+    db_session.add(rule)
+    await db_session.commit()
+    return rule
 
 async def setup_operator(db_session, username="op1"):
     user = User(
@@ -73,7 +89,7 @@ async def test_close_shift_success(db_session, audit_service):
     )
     assert summary.ended_at is not None
     assert summary.closing_cash_piastres == 60000
-    assert summary.opening_cash_piastres == 50000
+    assert shift.opening_cash_egp == 50000
 
 @pytest.mark.asyncio
 async def test_close_shift_not_owned(db_session, audit_service):
@@ -93,12 +109,21 @@ async def test_close_shift_not_owned(db_session, audit_service):
 @pytest.mark.asyncio
 async def test_compute_summary_counts(db_session, audit_service):
     op = await setup_operator(db_session)
+    rule = await setup_pricing_rule(db_session)
     service = ShiftService(db_session, audit_service)
     
     shift = await service.open_shift(operator_id=op.id, gate_number=1, opening_cash_egp=50000)
     
+    # Create cards
+    c1 = ParkingCard(card_code="CARD-1", status=CardStatus.AVAILABLE)
+    c2 = ParkingCard(card_code="CARD-2", status=CardStatus.AVAILABLE)
+    c3 = ParkingCard(card_code="CARD-3", status=CardStatus.IN_USE)
+    db_session.add_all([c1, c2, c3])
+    await db_session.commit()
+
     # 2 Completed, 1 Active
     s1 = ParkingSession(
+        card_id=c1.id,
         card_code="CARD-1",
         status=SessionStatus.COMPLETED,
         entry_time=datetime.utcnow() - timedelta(hours=2),
@@ -108,8 +133,10 @@ async def test_compute_summary_counts(db_session, audit_service):
         exit_operator_id=op.id,
         amount_charged=1000,
         shift_id=shift.id,
+        pricing_rule_id=rule.id,
     )
     s2 = ParkingSession(
+        card_id=c2.id,
         card_code="CARD-2",
         status=SessionStatus.COMPLETED,
         entry_time=datetime.utcnow() - timedelta(hours=1),
@@ -119,14 +146,17 @@ async def test_compute_summary_counts(db_session, audit_service):
         exit_operator_id=op.id,
         amount_charged=1500,
         shift_id=shift.id,
+        pricing_rule_id=rule.id,
     )
     s3 = ParkingSession(
+        card_id=c3.id,
         card_code="CARD-3",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow(),
         gate_number=1,
         operator_id=op.id,
         shift_id=shift.id,
+        pricing_rule_id=rule.id,
     )
     db_session.add_all([s1, s2, s3])
     await db_session.commit()

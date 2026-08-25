@@ -18,7 +18,7 @@ class SessionLostCardRequest(BaseModel):
 
 # Response Schemas
 class PriceBreakdownResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=False)
+    model_config = ConfigDict(from_attributes=True)
     duration_minutes: int
     billable_minutes: int
     billable_hours: int

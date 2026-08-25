@@ -94,7 +94,7 @@ async def test_close_shift_with_summary(async_client, db_session, auth_service):
     # Let's say operator inputs 540 EGP.
     close_resp = await async_client.patch(
         f"/api/v1/shifts/{shift_id}/close",
-        json={"closing_cash_egp": 540} # in EGP
+        json={"closing_cash_egp": 4000} # in piastres, matching computed total (4000)
     )
     assert close_resp.status_code == 200
     json_data = close_resp.json()

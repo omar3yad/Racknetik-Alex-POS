@@ -119,17 +119,22 @@ async def test_exit_scan_page_renders(async_client, db_session, auth_service):
 async def test_exit_lookup_success(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow() - timedelta(hours=2),
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.post(
@@ -144,9 +149,14 @@ async def test_exit_lookup_success(async_client, db_session, auth_service):
 async def test_receipt_page_triggers_print(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.AVAILABLE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.COMPLETED,
         entry_time=datetime.utcnow() - timedelta(hours=2),
@@ -155,8 +165,9 @@ async def test_receipt_page_triggers_print(async_client, db_session, auth_servic
         operator_id=op.id,
         exit_operator_id=op.id,
         amount_charged=2000,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.get(f"/ui/operator/receipt/{session.id}")
@@ -168,9 +179,14 @@ async def test_receipt_page_triggers_print(async_client, db_session, auth_servic
 async def test_receipt_sets_printed_at(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.AVAILABLE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.COMPLETED,
         entry_time=datetime.utcnow() - timedelta(hours=2),
@@ -179,8 +195,9 @@ async def test_receipt_sets_printed_at(async_client, db_session, auth_service):
         operator_id=op.id,
         exit_operator_id=op.id,
         amount_charged=2000,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     # Before call
@@ -197,9 +214,14 @@ async def test_receipt_sets_printed_at(async_client, db_session, auth_service):
 async def test_receipt_idempotent_printed_at(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.AVAILABLE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.COMPLETED,
         entry_time=datetime.utcnow() - timedelta(hours=2),
@@ -208,8 +230,9 @@ async def test_receipt_idempotent_printed_at(async_client, db_session, auth_serv
         operator_id=op.id,
         exit_operator_id=op.id,
         amount_charged=2000,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     await async_client.get(f"/ui/operator/receipt/{session.id}")

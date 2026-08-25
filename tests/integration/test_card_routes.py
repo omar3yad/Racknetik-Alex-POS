@@ -55,7 +55,7 @@ async def test_bulk_create_cards(async_client, db_session, auth_service):
         json={"card_codes": ["CARD-B1", "CARD-B2", "CARD-B3", "CARD-B4", "CARD-B5"]}
     )
     assert response.status_code == 201
-    assert response.json()["data"]["created"] == 5
+    assert response.json()["created"] == 5
 
 @pytest.mark.asyncio
 async def test_bulk_create_conflict(async_client, db_session, auth_service):

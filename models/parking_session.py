@@ -11,7 +11,8 @@ class SessionStatus(enum.Enum):
     LOST_CARD = "LOST_CARD"
 
 class PaymentMethod(enum.Enum):
-    CASH = "cash"
+    CASH = "CASH"
+    cash = "cash"
 
 class ParkingSession(Base, TimestampMixin):
     __tablename__ = "parking_sessions"

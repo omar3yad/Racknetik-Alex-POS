@@ -90,17 +90,22 @@ async def test_open_session_no_shift(async_client, db_session, auth_service):
 async def test_open_session_card_already_active(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow(),
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.post(
@@ -127,17 +132,22 @@ async def test_open_session_card_not_found(async_client, db_session, auth_servic
 async def test_exit_session_happy_path(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     rule = await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow() - timedelta(hours=2), # 2 hours duration
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.patch(f"/api/v1/sessions/{session.id}/exit")
@@ -151,17 +161,22 @@ async def test_exit_session_happy_path(async_client, db_session, auth_service):
 async def test_exit_session_grace_period(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     rule = await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow() - timedelta(minutes=5), # within grace period (15 mins)
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.patch(f"/api/v1/sessions/{session.id}/exit")
@@ -174,18 +189,23 @@ async def test_exit_session_grace_period(async_client, db_session, auth_service)
 async def test_exit_session_not_active(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.AVAILABLE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.COMPLETED,
         entry_time=datetime.utcnow() - timedelta(hours=2),
         exit_time=datetime.utcnow(),
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.patch(f"/api/v1/sessions/{session.id}/exit")
@@ -195,18 +215,23 @@ async def test_exit_session_not_active(async_client, db_session, auth_service):
 @pytest.mark.asyncio
 async def test_exit_no_pricing_rule(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     # Note: no active pricing rules seeded
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow() - timedelta(hours=2),
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.patch(f"/api/v1/sessions/{session.id}/exit")
@@ -217,17 +242,22 @@ async def test_exit_no_pricing_rule(async_client, db_session, auth_service):
 async def test_lost_card_happy_path(async_client, db_session, auth_service):
     op = await setup_operator(db_session, auth_service, async_client)
     rule = await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-0001", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-0001",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow() - timedelta(hours=2),
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     response = await async_client.patch(

@@ -53,6 +53,7 @@ class ShiftService:
         self.db.add(shift)
         await self.db.flush()
         await self.db.commit()
+        await self.db.refresh(shift)
 
         await self.audit_service.log(
             actor_id=operator_id,
@@ -90,6 +91,7 @@ class ShiftService:
         summary = await self._compute_summary(shift, closing_cash_piastres)
         await self.db.flush()
         await self.db.commit()
+        await self.db.refresh(shift)
 
         await self.audit_service.log(
             actor_id=operator_id,

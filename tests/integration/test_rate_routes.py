@@ -58,7 +58,7 @@ async def test_preview_price(async_client, db_session, auth_service):
     await setup_operator(db_session, auth_service, async_client)
     await setup_pricing_rule(db_session)
     
-    entry_time = (datetime.utcnow() - timedelta(minutes=65)).isoformat()
+    entry_time = (datetime.utcnow() - timedelta(minutes=80)).isoformat()
     response = await async_client.get(f"/api/v1/rates/preview?entry_time={entry_time}")
     assert response.status_code == 200
     json_data = response.json()

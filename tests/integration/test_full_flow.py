@@ -130,17 +130,22 @@ async def test_complete_lost_card_flow(async_client, db_session, auth_service):
 async def test_race_condition_double_exit(async_client, db_session, auth_service):
     op = await setup_user(db_session, auth_service, async_client)
     rule = await setup_pricing_rule(db_session)
-    await open_operator_shift(db_session, op.id)
+    shift = await open_operator_shift(db_session, op.id)
     
     card = ParkingCard(card_code="CARD-RACE-EXIT", status=CardStatus.IN_USE)
+    db_session.add(card)
+    await db_session.commit()
+    
     session = ParkingSession(
+        card_id=card.id,
         card_code="CARD-RACE-EXIT",
         status=SessionStatus.ACTIVE,
         entry_time=datetime.utcnow() - timedelta(hours=2),
         gate_number=1,
         operator_id=op.id,
+        shift_id=shift.id,
     )
-    db_session.add_all([card, session])
+    db_session.add(session)
     await db_session.commit()
 
     # Call concurrently
