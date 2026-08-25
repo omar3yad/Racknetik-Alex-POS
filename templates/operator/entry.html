@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل الدخول - نظام إدارة الجراج{% endblock %}
+
+{% block head %}
+<style>
+  @keyframes pulse-border {
+    0% { border-color: rgba(79, 70, 229, 0.4); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+    70% { border-color: rgba(79, 70, 229, 1); box-shadow: 0 0 0 6px rgba(79, 70, 229, 0); }
+    100% { border-color: rgba(79, 70, 229, 0.4); box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+  }
+  .pulse-focus {
+    animation: pulse-border 2s infinite;
+  }
+</style>
+{% endblock %}
+
+{% block nav %}
+<nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center">
+    <a href="/ui/operator/dashboard" class="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        <span>رجوع لوحة التحكم</span>
+    </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-md flex flex-col justify-center flex-grow">
+    
+    {% if error %}
+    <!-- Red error banner -->
+    <div class="bg-red-900 border-l-4 border-red-500 text-white p-4 rounded-lg mb-6 shadow-md">
+        <div class="font-bold mb-1">حاول تاني!</div>
+        <p class="text-sm">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Card Scan Container -->
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl text-center">
+        <h2 class="text-2xl font-bold mb-6 text-indigo-300">{{ t("operator.entry.scan_label") }}</h2>
+        
+        <form id="scan-form" method="POST" action="/ui/operator/entry" class="flex flex-col">
+            <!-- Plate Number Input (Optional) -->
+            <div class="mb-4 text-right">
+                <label class="block text-sm text-gray-400 mb-1">رقم اللوحة (اختياري)</label>
+                <input type="text" 
+                       name="plate_number" 
+                       placeholder="مثال: أ ب ج ١٢٣٤" 
+                       class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-center text-white text-lg focus:outline-none focus:border-indigo-500 transition duration-200">
+            </div>
+
+            <!-- Card Code Input (Barcoded Scanner Target) -->
+            <div class="mb-4">
+                <label class="block text-sm text-gray-400 mb-1 text-right">امسح كود الكرت</label>
+                <input id="scan-input" 
+                       type="text" 
+                       name="card_code" 
+                       inputmode="none" 
+                       autocomplete="off" 
+                       autocorrect="off" 
+                       autocapitalize="off" 
+                       spellcheck="false" 
+                       autofocus 
+                       placeholder="امسح الباركود..."
+                       class="w-full bg-gray-900 border border-gray-700 rounded-lg p-4 text-center text-white text-xl font-mono focus:outline-none pulse-focus transition duration-200">
+            </div>
+
+            <button type="submit" class="hidden">إرسال</button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/scan.js"></script>
+{% endblock %}

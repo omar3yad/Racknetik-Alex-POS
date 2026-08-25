@@ -1,0 +1,176 @@
+from fastapi import APIRouter, Depends, Query, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database import get_db
+from dependencies import require_admin, require_any_role
+from models.user import User
+from models.parking_card import CardStatus
+from repositories.card_repo import ParkingCardRepository
+from schemas.common import PaginatedResponse
+from schemas.parking_card import (
+    ParkingCardCreate,
+    ParkingCardBulkCreate,
+    ParkingCardResponse,
+    ParkingCardStatusUpdate,
+)
+from services.card_service import CardService
+from services.audit_service import AuditService
+from services.exceptions import InvalidBarcodeFormatError
+
+router = APIRouter(prefix="/api/v1/cards", tags=["cards"])
+
+def get_card_service(db: AsyncSession = Depends(get_db)) -> CardService:
+    return CardService(db)
+
+def get_card_repo(db: AsyncSession = Depends(get_db)) -> ParkingCardRepository:
+    return ParkingCardRepository(db)
+
+@router.post("/", status_code=201)
+async def create_card(
+    data: ParkingCardCreate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    card_service: CardService = Depends(get_card_service),
+    card_repo: ParkingCardRepository = Depends(get_card_repo),
+):
+    try:
+        normalized = card_service.normalize_code(data.card_code)
+    except InvalidBarcodeFormatError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=e.message,
+            headers={"X-Error-Code": "INVALID_BARCODE_FORMAT"},
+        )
+
+    existing = await card_repo.get_by_code(normalized)
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="Card code already exists",
+            headers={"X-Error-Code": "CARD_CODE_ALREADY_EXISTS"},
+        )
+
+    card = await card_repo.create(normalized)
+    await db.commit()
+
+    return {"data": ParkingCardResponse.model_validate(card).model_dump(mode="json")}
+
+@router.post("/bulk", status_code=201)
+async def create_cards_bulk(
+    data: ParkingCardBulkCreate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    card_service: CardService = Depends(get_card_service),
+    card_repo: ParkingCardRepository = Depends(get_card_repo),
+):
+    normalized_codes = []
+    for code in data.card_codes:
+        try:
+            normalized_codes.append(card_service.normalize_code(code))
+        except InvalidBarcodeFormatError as e:
+            raise HTTPException(
+                status_code=422,
+                detail=e.message,
+                headers={"X-Error-Code": "INVALID_BARCODE_FORMAT"},
+            )
+
+    conflicting = await card_repo.get_existing_codes(normalized_codes)
+    if conflicting:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Duplicate codes: {', '.join(conflicting)}",
+            headers={"X-Error-Code": "BULK_CARD_CONFLICT"},
+        )
+
+    cards = await card_repo.bulk_create(normalized_codes)
+    await db.commit()
+
+    responses = [ParkingCardResponse.model_validate(c).model_dump(mode="json") for c in cards]
+    return {
+        "data": responses,
+        "created": len(cards),
+    }
+
+@router.get("/", response_model=PaginatedResponse[ParkingCardResponse])
+async def get_cards(
+    status: CardStatus | None = None,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(require_admin),
+    card_repo: ParkingCardRepository = Depends(get_card_repo),
+):
+    cards, total = await card_repo.get_all(status=status, page=page, size=size)
+    responses = [ParkingCardResponse.model_validate(c) for c in cards]
+    return PaginatedResponse[ParkingCardResponse](
+        data=responses,
+        total=total,
+        page=page,
+        size=size,
+    )
+
+@router.get("/{card_code}")
+async def get_card_by_code(
+    card_code: str,
+    current_user: User = Depends(require_any_role),
+    card_service: CardService = Depends(get_card_service),
+    card_repo: ParkingCardRepository = Depends(get_card_repo),
+):
+    try:
+        normalized = card_service.normalize_code(card_code)
+    except InvalidBarcodeFormatError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=e.message,
+            headers={"X-Error-Code": "INVALID_BARCODE_FORMAT"},
+        )
+
+    card = await card_repo.get_by_code(normalized)
+    if not card:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Card '{card_code}' not found",
+            headers={"X-Error-Code": "CARD_NOT_FOUND"},
+        )
+    return {"data": ParkingCardResponse.model_validate(card).model_dump(mode="json")}
+
+@router.patch("/{card_code}/status")
+async def update_card_status(
+    card_code: str,
+    data: ParkingCardStatusUpdate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    card_service: CardService = Depends(get_card_service),
+    card_repo: ParkingCardRepository = Depends(get_card_repo),
+):
+    try:
+        normalized = card_service.normalize_code(card_code)
+    except InvalidBarcodeFormatError as e:
+        raise HTTPException(
+            status_code=422,
+            detail=e.message,
+            headers={"X-Error-Code": "INVALID_BARCODE_FORMAT"},
+        )
+
+    card = await card_repo.get_by_code(normalized)
+    if not card:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Card '{card_code}' not found",
+            headers={"X-Error-Code": "CARD_NOT_FOUND"},
+        )
+
+    old_status = card.status
+    card = await card_service.set_status(card, data.status)
+    await db.commit()
+
+    audit_service = AuditService(db)
+    await audit_service.log(
+        actor_id=current_user.id,
+        action="CARD_STATUS_CHANGED",
+        entity_type="parking_card",
+        entity_id=card.id,
+        before={"status": old_status.value},
+        after={"status": card.status.value},
+    )
+
+    return {"data": ParkingCardResponse.model_validate(card).model_dump(mode="json")}

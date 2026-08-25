@@ -96,11 +96,21 @@ async def generic_exception_handler(request: Request, exc: Exception):
 from routes.auth import router as auth_router
 from routes.users import router as users_router
 from routes.ui_auth import router as ui_auth_router
+from routes.cards import router as cards_router
+from routes.sessions import router as sessions_router
+from routes.shifts import router as shifts_router
+from routes.rates import router as rates_router
+from routes.ui_operator import router as ui_operator_router
 
 # Include routers
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(ui_auth_router)
+app.include_router(cards_router)
+app.include_router(sessions_router)
+app.include_router(shifts_router)
+app.include_router(rates_router)
+app.include_router(ui_operator_router)
 
 @app.get("/")
 async def root_redirect():

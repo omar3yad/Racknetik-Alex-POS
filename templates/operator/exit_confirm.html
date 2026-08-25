@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}تأكيد الدفع - نظام إدارة الجراج{% endblock %}
+
+{% block nav %}
+<nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center">
+    <a href="/ui/operator/exit" class="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        <span>إلغاء الخروج والرجوع</span>
+    </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-md flex flex-col flex-grow justify-center">
+
+    <!-- Card details and price breakdown -->
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-xl overflow-hidden mb-6">
+        
+        <!-- Header -->
+        <div class="bg-gray-750 px-6 py-4 border-b border-gray-700 text-center">
+            <span class="text-xs text-indigo-400 block mb-1">تفاصيل الجلسة والكرت</span>
+            <h2 class="font-mono text-2xl font-bold tracking-widest text-white">{{ session.card_code }}</h2>
+        </div>
+
+        <div class="p-6 flex flex-col gap-4">
+            <!-- Timestamps and duration info -->
+            <div class="grid grid-cols-2 gap-4 text-sm border-b border-gray-700 pb-4">
+                <div>
+                    <span class="block text-gray-500 text-xs mb-1">وقت الدخول</span>
+                    <span class="font-semibold text-gray-300">{{ session.entry_time | format_datetime }}</span>
+                </div>
+                <div>
+                    <span class="block text-gray-500 text-xs mb-1">وقت الخروج المتوقع</span>
+                    <span class="font-semibold text-gray-300">{{ calc.duration_minutes | format_duration }}</span>
+                </div>
+            </div>
+
+            <!-- Duration Summary -->
+            <div class="flex justify-between items-center text-sm border-b border-gray-700 pb-4">
+                <span class="text-gray-400">المدة الإجمالية:</span>
+                <span class="font-bold text-white text-lg">{{ calc.duration_minutes | format_duration }}</span>
+            </div>
+
+            <!-- Price Calculation Details -->
+            <div class="flex flex-col gap-2.5 text-sm border-b border-gray-700 pb-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">التعريفة النشطة:</span>
+                    <span class="font-semibold text-indigo-400">{{ rule.label }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">سعر الساعة:</span>
+                    <span class="font-semibold text-gray-300">{{ rule.rate_per_hour | format_egp }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">فترة السماح:</span>
+                    <span class="font-semibold text-gray-300">{{ rule.grace_period_mins }} دقيقة</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">حالة فترة السماح:</span>
+                    {% if calc.is_grace_period %}
+                        <span class="text-green-500 font-bold">ضمن فترة السماح</span>
+                    {% else %}
+                        <span class="text-red-400">خارج فترة السماح</span>
+                    {% endif %}
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">الساعات المحسوبة:</span>
+                    <span class="font-semibold text-gray-300">{{ calc.billable_hours }} ساعة</span>
+                </div>
+                
+                <!-- Financial items -->
+                <div class="flex justify-between border-t border-gray-700/50 pt-2">
+                    <span class="text-gray-400">المبلغ الأساسي:</span>
+                    <span class="font-semibold text-gray-300">{{ calc.base_amount | format_egp }}</span>
+                </div>
+                {% if calc.penalty_amount > 0 %}
+                <div class="flex justify-between text-red-400">
+                    <span>غرامة الكرت المفقود:</span>
+                    <span class="font-bold">{{ calc.penalty_amount | format_egp }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Grand Total -->
+            <div class="flex justify-between items-center">
+                <span class="text-lg font-bold text-gray-300">المبلغ الإجمالي المستحق:</span>
+                <span class="text-3xl font-black text-green-500">{{ calc.total_amount | format_egp }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Form -->
+    <form method="POST" action="/ui/operator/exit/{{ session.id }}/confirm" class="w-full flex flex-col gap-4">
+        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 text-xl min-h-[64px]">
+            {{ t("operator.exit.confirm_button") }}
+        </button>
+        <a href="/ui/operator/exit" class="w-full border border-gray-700 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-lg transition duration-200 text-center text-sm">
+            إلغاء
+        </a>
+    </form>
+
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إيصال وقوف سيارات</title>
+  <link rel="stylesheet" href="/static/print.css">
+  <style>
+    body { width: 58mm; font-family: 'Courier New', Courier, monospace;
+           font-size: 10pt; direction: rtl; margin: 0; padding: 4mm; background: #fff; color: #000; }
+    .sep { white-space: pre; margin: 2px 0; text-align: center; }
+    .lbl { font-size: 9pt; }
+    .val { font-weight: bold; }
+    .total-line { font-size: 13pt; font-weight: bold; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .row { display: flex; justify-content: space-between; margin: 3px 0; }
+  </style>
+</head>
+<body class="receipt-body">
+
+  <!-- Receipt Body Content -->
+  <div class="center bold" style="font-size: 12pt;">{{ receipt.garage_name }}</div>
+  <p class="sep">--------------------------------</p>
+  
+  <div class="center bold" style="font-size: 11pt;">
+    {{ t("receipt.lost_card_title") if receipt.is_lost_card else t("receipt.title") }}
+  </div>
+  <div class="center font-mono">رقم العملية: {{ receipt.session_id | string | zfill(8) }}</div>
+  <p class="sep">--------------------------------</p>
+
+  <div class="row">
+    <span class="lbl">رقم الكرت:</span>
+    <span class="val font-mono">{{ receipt.card_code }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">رقم السيارة:</span>
+    <span class="val">{{ receipt.plate_number if receipt.plate_number else "غير مسجل" }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">بوابة الخروج:</span>
+    <span class="val">بوابة {{ receipt.gate_number }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">المشغل:</span>
+    <span class="val">{{ receipt.operator_name }}</span>
+  </div>
+  
+  <p class="sep">--------------------------------</p>
+
+  <div class="row">
+    <span class="lbl">وقت الدخول:</span>
+    <span class="val">{{ receipt.entry_time | format_datetime }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">وقت الخروج:</span>
+    <span class="val">{{ receipt.exit_time | format_datetime }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">المدة الإجمالية:</span>
+    <span class="val">{{ receipt.duration_minutes | format_duration }}</span>
+  </div>
+
+  <p class="sep">--------------------------------</p>
+
+  <div class="row">
+    <span class="lbl">التعريفة:</span>
+    <span class="val">{{ receipt.pricing_rule_label }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">سعر الساعة:</span>
+    <span class="val">{{ receipt.rate_per_hour | format_egp }}</span>
+  </div>
+  <div class="row">
+    <span class="lbl">فترة السماح:</span>
+    <span class="val">{{ receipt.grace_period_mins }} دقيقة</span>
+  </div>
+  
+  {% if receipt.is_grace_period %}
+  <div class="center bold text-green-700" style="margin: 4px 0;">ضمن فترة السماح</div>
+  {% endif %}
+
+  <div class="row" style="margin-top: 6px;">
+    <span class="lbl">حساب الساعات:</span>
+    <span class="val">{{ receipt.base_amount | format_egp }}</span>
+  </div>
+  {% if receipt.penalty_amount > 0 %}
+  <div class="row text-red-600">
+    <span class="lbl">غرامة الكرت المفقود:</span>
+    <span class="val">+ {{ receipt.penalty_amount | format_egp }}</span>
+  </div>
+  {% endif %}
+
+  <p class="sep">--------------------------------</p>
+
+  <div class="row total-line">
+    <span>الإجمالي:</span>
+    <span>{{ receipt.total_amount | format_egp }}</span>
+  </div>
+  <div class="row text-xs">
+    <span>طريقة الدفع:</span>
+    <span>نقداً</span>
+  </div>
+
+  <p class="sep">--------------------------------</p>
+  <div class="center bold">{{ t("receipt.footer") }}</div>
+
+  <!-- Non-print preview controls -->
+  <div class="no-print" style="margin-top: 30px; text-align: center; font-family: sans-serif; border-top: 1px solid #ccc; padding-top: 15px;">
+    <button onclick="window.print()" style="background: #4f46e5; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11pt;">طباعة مرة أخرى</button>
+    <a href="/ui/operator/dashboard" style="display: block; margin-top: 15px; color: #4f46e5; text-decoration: none; font-size: 10pt; font-weight: bold;">رجوع لوحة التحكم</a>
+  </div>
+
+  <!-- Print and redirect script -->
+  <script>
+    window.addEventListener('load', () => {
+      window.print();
+      setTimeout(() => {
+        window.location.href = '/ui/operator/dashboard';
+      }, 2000);
+    });
+  </script>
+</body>
+</html>

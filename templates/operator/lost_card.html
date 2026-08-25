@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}تسجيل كرت مفقود - نظام إدارة الجراج{% endblock %}
+
+{% block nav %}
+<nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center">
+    <a href="/ui/operator/dashboard" class="text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-2">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        <span>رجوع لوحة التحكم</span>
+    </a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-md flex flex-col flex-grow justify-center">
+
+    <!-- Amber Warning Banner -->
+    <div class="bg-amber-600 text-white font-bold px-4 py-3 rounded-lg mb-6 shadow-md text-center">
+        {{ t("operator.lost_card.warning") }}
+    </div>
+
+    {% if error %}
+    <!-- Red error banner -->
+    <div class="bg-red-900 border-l-4 border-red-500 text-white p-4 rounded-lg mb-6 shadow-md">
+        <p class="text-sm">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Lookup Form -->
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl mb-6">
+        <h3 class="text-lg font-bold text-gray-300 mb-4 text-center">البحث برقم لوحة السيارة</h3>
+        
+        <form method="POST" action="/ui/operator/lost-card" class="flex flex-col gap-4">
+            <!-- Plate input -->
+            <div class="text-right">
+                <label class="block text-sm text-gray-400 mb-1">رقم اللوحة</label>
+                <input type="text" 
+                       name="plate_number" 
+                       required 
+                       placeholder="مثال: أ ب ج ١٢٣٤" 
+                       dir="rtl"
+                       inputmode="text"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-center text-white text-lg font-bold min-h-[48px] focus:outline-none focus:border-indigo-500 transition duration-200">
+            </div>
+
+            <!-- Notes textarea -->
+            <div class="text-right">
+                <label class="block text-sm text-gray-400 mb-1">ملاحظات (اختياري)</label>
+                <textarea name="notes" 
+                          rows="2" 
+                          placeholder="ملاحظات حول السيارة أو العميل..."
+                          class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-indigo-500 transition duration-200">{{ notes or "" }}</textarea>
+            </div>
+
+            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow transition duration-200 min-h-[56px] text-lg">
+                البحث عن الجلسة النشطة
+            </button>
+        </form>
+    </div>
+
+    <!-- Multiple Sessions Match List -->
+    {% if sessions %}
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl">
+        <h4 class="text-sm font-bold text-gray-400 mb-4 text-right">يرجى اختيار الكرت المطابق للسيارة:</h4>
+        <div class="flex flex-col gap-3">
+            {% for s in sessions %}
+            <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 flex justify-between items-center hover:border-indigo-500 transition duration-200">
+                <div class="text-right">
+                    <span class="block font-mono font-bold text-white text-lg">{{ s.card_code }}</span>
+                    <span class="block text-xs text-gray-500">دخول: {{ s.entry_time | format_datetime }}</span>
+                    <span class="block text-xs text-gray-500">البوابة: {{ s.gate_number }}</span>
+                </div>
+                <a href="/ui/operator/lost-card/confirm/{{ s.id }}?notes={{ notes }}" 
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-bold text-sm transition duration-200">
+                    اختر
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
