@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     CORS_ORIGINS: list[str] = []
+    SEED_ADMIN_USERNAME: str | None = None
+    SEED_ADMIN_PASSWORD: str | None = None
+    SEED_ADMIN_FULL_NAME: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -305,11 +305,11 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 6 — Repositories
 
-- [ ] **Task 6.1:** Create `repositories/__init__.py` as an empty file.
+- [x] **Task 6.1:** Create `repositories/__init__.py` as an empty file.
 
 ### 6a — User Repository
 
-- [ ] **Task 6.2:** Create `repositories/user_repo.py`. Define a `UserRepository`
+- [x] **Task 6.2:** Create `repositories/user_repo.py`. Define a `UserRepository`
   class with `__init__(self, db: AsyncSession)` storing `self.db = db`. Add one method
   only:
 ```python
@@ -317,21 +317,21 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 ```
   Uses `db.get(User, user_id)`. Returns the `User` or `None`.
 
-- [ ] **Task 6.3:** In `repositories/user_repo.py`, add:
+- [x] **Task 6.3:** In `repositories/user_repo.py`, add:
 ```python
   async def get_by_username(self, username: str) -> User | None
 ```
   Uses `select(User).where(User.username == username)`. Returns the first result or
   `None`.
 
-- [ ] **Task 6.4:** In `repositories/user_repo.py`, add:
+- [x] **Task 6.4:** In `repositories/user_repo.py`, add:
 ```python
   async def create(self, **kwargs) -> User
 ```
   Creates a `User(**kwargs)`, adds to session, flushes (does not commit), and returns
   the user. The caller is responsible for committing.
 
-- [ ] **Task 6.5:** In `repositories/user_repo.py`, add:
+- [x] **Task 6.5:** In `repositories/user_repo.py`, add:
 ```python
   async def get_all(
       self,
@@ -347,19 +347,19 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   `total_count` comes from a separate `select(func.count()).select_from(User)` with
   the same filters applied.
 
-- [ ] **Task 6.6:** In `repositories/user_repo.py`, add:
+- [x] **Task 6.6:** In `repositories/user_repo.py`, add:
 ```python
   async def update_fields(self, user: User, **fields) -> User
 ```
   Sets each key-value pair in `fields` as an attribute on the `user` object, flushes
   the session, and returns the updated user. Does not commit.
 
-- [ ] **Task 6.7:** Update `repositories/__init__.py` to import and re-export
+- [x] **Task 6.7:** Update `repositories/__init__.py` to import and re-export
   `UserRepository`. Add `__all__`.
 
 ### 6b — AuditLog Repository
 
-- [ ] **Task 6.8:** Create `repositories/audit_log_repo.py`. Define an
+- [x] **Task 6.8:** Create `repositories/audit_log_repo.py`. Define an
   `AuditLogRepository` class with `__init__(self, db: AsyncSession)`. Add one method:
 ```python
   async def create(
@@ -379,15 +379,15 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 7 — Services
 
-- [ ] **Task 7.1:** Create `services/__init__.py` as an empty file.
+- [x] **Task 7.1:** Create `services/__init__.py` as an empty file.
 
 ### 7a — Auth Service
 
-- [ ] **Task 7.2:** Create `services/auth_service.py`. Define a custom exception class
+- [x] **Task 7.2:** Create `services/auth_service.py`. Define a custom exception class
   `AuthenticationError(Exception)` at the top of the file. It takes an optional
   `message: str = "Invalid credentials"` in `__init__`. No other attributes.
 
-- [ ] **Task 7.3:** In `services/auth_service.py`, define an `AuthService` class with
+- [x] **Task 7.3:** In `services/auth_service.py`, define an `AuthService` class with
   `__init__(self, settings: Settings)` storing `self.settings = settings`. Add one
   method:
 ```python
@@ -396,14 +396,14 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   Uses `bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt(rounds=12))`. Returns the
   decoded hash string. The plaintext value must not persist after this call.
 
-- [ ] **Task 7.4:** In `services/auth_service.py`, add:
+- [x] **Task 7.4:** In `services/auth_service.py`, add:
 ```python
   def verify_password(self, plain: str, hashed: str) -> bool
 ```
   Uses `bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))`. Returns the
   boolean result. Must not short-circuit before `checkpw` completes.
 
-- [ ] **Task 7.5:** In `services/auth_service.py`, add:
+- [x] **Task 7.5:** In `services/auth_service.py`, add:
 ```python
   def create_access_token(self, user_id: int, role: str) -> str
 ```
@@ -412,7 +412,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   `jose.jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)`.
   Returns the token string.
 
-- [ ] **Task 7.6:** In `services/auth_service.py`, add:
+- [x] **Task 7.6:** In `services/auth_service.py`, add:
 ```python
   def decode_token(self, token: str) -> TokenPayload
 ```
@@ -421,7 +421,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   schema. Raises `AuthenticationError("Token is invalid or expired")` on any
   `JWTError` or Pydantic validation failure.
 
-- [ ] **Task 7.7:** In `services/auth_service.py`, add:
+- [x] **Task 7.7:** In `services/auth_service.py`, add:
 ```python
   async def authenticate_user(
       self, username: str, password: str, user_repo: UserRepository
@@ -434,13 +434,13 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   Returns the `User` on success. Define `DUMMY_HASH` as a module-level constant
   pre-computed bcrypt hash of the string `"__dummy__"`.
 
-- [ ] **Task 7.8:** Add `__all__ = ["AuthService", "AuthenticationError"]` to
+- [x] **Task 7.8:** Add `__all__ = ["AuthService", "AuthenticationError"]` to
   `services/auth_service.py`. Update `services/__init__.py` to import and re-export
   both.
 
 ### 7b — Audit Service
 
-- [ ] **Task 7.9:** Create `services/audit_service.py`. Define an `AuditService`
+- [x] **Task 7.9:** Create `services/audit_service.py`. Define an `AuditService`
   class with `__init__(self, db: AsyncSession)`. Add one method:
 ```python
   async def log(
@@ -459,12 +459,12 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   `try/except Exception` that logs the error using Python `logging.getLogger(__name__)`
   at `ERROR` level but does not re-raise. Does not commit — the caller commits.
 
-- [ ] **Task 7.10:** Add `__all__ = ["AuditService"]` to `services/audit_service.py`.
+- [x] **Task 7.10:** Add `__all__ = ["AuditService"]` to `services/audit_service.py`.
   Update `services/__init__.py`.
 
 ### 7c — User Service
 
-- [ ] **Task 7.11:** Create `services/user_service.py`. Define a `UserService` class
+- [x] **Task 7.11:** Create `services/user_service.py`. Define a `UserService` class
   with:
 ```python
   def __init__(
@@ -477,7 +477,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 ```
   Store all four as instance attributes. No logic in `__init__`.
 
-- [ ] **Task 7.12:** In `services/user_service.py`, add:
+- [x] **Task 7.12:** In `services/user_service.py`, add:
 ```python
   async def create_user(self, data: UserCreate) -> User
 ```
@@ -489,7 +489,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   action="USER_CREATED", entity_type="user", entity_id=new_user.id, before=None,
   after={...})`. Commits `self.db`. Returns the created `User`.
 
-- [ ] **Task 7.13:** In `services/user_service.py`, add:
+- [x] **Task 7.13:** In `services/user_service.py`, add:
 ```python
   async def deactivate_user(self, user_id: int, actor_id: int) -> User
 ```
@@ -500,7 +500,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   `user_repo.update_fields(user, is_active=False)`. Calls `audit_service.log` with
   action `"USER_DEACTIVATED"`. Commits. Returns the updated user.
 
-- [ ] **Task 7.14:** In `services/user_service.py`, add:
+- [x] **Task 7.14:** In `services/user_service.py`, add:
 ```python
   async def reset_password(
       self, user_id: int, new_password: str, actor_id: int
@@ -512,7 +512,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   `"USER_PASSWORD_RESET"`, `before=None`, `after={"user_id": user_id}` (never log the
   password). Commits. Returns the updated user.
 
-- [ ] **Task 7.15:** In `services/user_service.py`, add:
+- [x] **Task 7.15:** In `services/user_service.py`, add:
 ```python
   async def get_all_users(
       self,
@@ -525,14 +525,14 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 ```
   Delegates directly to `user_repo.get_all(...)` and returns the result unchanged.
 
-- [ ] **Task 7.16:** Add `__all__ = ["UserService"]` to `services/user_service.py`.
+- [x] **Task 7.16:** Add `__all__ = ["UserService"]` to `services/user_service.py`.
   Update `services/__init__.py`.
 
 ---
 
 ## Group 8 — FastAPI Dependencies
 
-- [ ] **Task 8.1:** Create `dependencies.py` in the project root. Define:
+- [x] **Task 8.1:** Create `dependencies.py` in the project root. Define:
 ```python
   async def get_current_user(
       request: Request, db: AsyncSession = Depends(get_db)
@@ -545,7 +545,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   sub)`. If user not found or `is_active` is False, raises `HTTPException(401,
   code="UNAUTHORIZED")`. Returns the `User`.
 
-- [ ] **Task 8.2:** In `dependencies.py`, define:
+- [x] **Task 8.2:** In `dependencies.py`, define:
 ```python
   async def require_operator(
       user: User = Depends(get_current_user),
@@ -554,7 +554,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   Raises `HTTPException(403, code="INSUFFICIENT_PERMISSIONS")` if
   `user.role != UserRole.OPERATOR`. Returns `user`.
 
-- [ ] **Task 8.3:** In `dependencies.py`, define:
+- [x] **Task 8.3:** In `dependencies.py`, define:
 ```python
   async def require_admin(
       user: User = Depends(get_current_user),
@@ -563,7 +563,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   Raises `HTTPException(403, code="INSUFFICIENT_PERMISSIONS")` if
   `user.role != UserRole.ADMIN`. Returns `user`.
 
-- [ ] **Task 8.4:** In `dependencies.py`, define:
+- [x] **Task 8.4:** In `dependencies.py`, define:
 ```python
   async def require_any_role(
       user: User = Depends(get_current_user),
@@ -577,11 +577,11 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 9 — Routes
 
-- [ ] **Task 9.1:** Create `routes/__init__.py` as an empty file.
+- [x] **Task 9.1:** Create `routes/__init__.py` as an empty file.
 
 ### 9a — Auth API Routes
 
-- [ ] **Task 9.2:** Create `routes/auth.py`. Define `router = APIRouter(prefix=
+- [x] **Task 9.2:** Create `routes/auth.py`. Define `router = APIRouter(prefix=
   "/api/v1/auth", tags=["auth"])`. Add the `POST /login` endpoint:
   - Accepts `username: str = Form(...)` and `password: str = Form(...)`.
   - Instantiates `AuthService`, `UserRepository`, and `AuditService`.
@@ -595,20 +595,20 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   - Calls `audit_service.log` with action `"USER_LOGIN"`, commits `db`, returns
     response.
 
-- [ ] **Task 9.3:** In `routes/auth.py`, add the `POST /logout` endpoint:
+- [x] **Task 9.3:** In `routes/auth.py`, add the `POST /logout` endpoint:
   - Requires no authentication (public endpoint).
   - Creates a `JSONResponse({"data": "logged out"})`.
   - Deletes `pgms_token` cookie by setting `max_age=0`.
   - Returns the response.
 
-- [ ] **Task 9.4:** In `routes/auth.py`, add the `GET /me` endpoint:
+- [x] **Task 9.4:** In `routes/auth.py`, add the `GET /me` endpoint:
   - Uses `Depends(require_any_role)` to get the current user.
   - Returns `{"data": UserResponse.model_validate(user).model_dump()}` with status
     `200`.
 
 ### 9b — User Management API Routes
 
-- [ ] **Task 9.5:** Create `routes/users.py`. Define `router = APIRouter(prefix=
+- [x] **Task 9.5:** Create `routes/users.py`. Define `router = APIRouter(prefix=
   "/api/v1/users", tags=["users"])`. Add `POST /` endpoint:
   - Uses `Depends(require_admin)`.
   - Accepts `data: UserCreate` as JSON body.
@@ -617,7 +617,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   - Returns `{"data": UserResponse.model_validate(user).model_dump()}` with status
     `201`.
 
-- [ ] **Task 9.6:** In `routes/users.py`, add `GET /` endpoint:
+- [x] **Task 9.6:** In `routes/users.py`, add `GET /` endpoint:
   - Uses `Depends(require_admin)`.
   - Query params: `role: UserRole | None = None`, `is_active: bool | None = None`,
     `gate_number: int | None = None`, `page: int = Query(1, ge=1)`,
@@ -625,18 +625,18 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   - Calls `user_service.get_all_users(...)`.
   - Returns `PaginatedResponse[UserResponse]` with `data`, `total`, `page`, `size`.
 
-- [ ] **Task 9.7:** In `routes/users.py`, add `GET /{user_id}` endpoint:
+- [x] **Task 9.7:** In `routes/users.py`, add `GET /{user_id}` endpoint:
   - Uses `Depends(require_admin)`.
   - Fetches user via `UserRepository.get_by_id`.
   - Returns `{"data": UserResponse(...)}` or `HTTPException(404,
     code="USER_NOT_FOUND")`.
 
-- [ ] **Task 9.8:** In `routes/users.py`, add `PATCH /{user_id}/deactivate` endpoint:
+- [x] **Task 9.8:** In `routes/users.py`, add `PATCH /{user_id}/deactivate` endpoint:
   - Uses `Depends(require_admin)`.
   - Calls `user_service.deactivate_user(user_id, actor_id=current_user.id)`.
   - Returns `{"data": UserResponse(...)}` with status `200`.
 
-- [ ] **Task 9.9:** In `routes/users.py`, add `PATCH /{user_id}/reset-password`
+- [x] **Task 9.9:** In `routes/users.py`, add `PATCH /{user_id}/reset-password`
   endpoint:
   - Uses `Depends(require_admin)`.
   - Accepts `data: UserUpdatePassword` as JSON body.
@@ -646,7 +646,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ### 9c — UI Auth Routes
 
-- [ ] **Task 9.10:** Create `routes/ui_auth.py`. Define `router = APIRouter(
+- [x] **Task 9.10:** Create `routes/ui_auth.py`. Define `router = APIRouter(
   prefix="/ui", tags=["ui-auth"])`. Add `GET /login` endpoint:
   - Checks for a valid `pgms_token` cookie silently (no dependency injection — manual
     check to avoid raising exceptions).
@@ -655,7 +655,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   - If no valid token: returns `TemplateResponse("auth/login.html", {"request":
     request, "error": None})`.
 
-- [ ] **Task 9.11:** In `routes/ui_auth.py`, add `POST /login` endpoint:
+- [x] **Task 9.11:** In `routes/ui_auth.py`, add `POST /login` endpoint:
   - Accepts form fields `username: str = Form(...)` and `password: str = Form(...)`.
   - Calls `authenticate_user`; on failure, re-renders `auth/login.html` with the
     Arabic error message from `translations/ar.json` key
@@ -665,7 +665,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
     `/ui/operator/dashboard` (operator) or `/ui/admin/dashboard` (admin) with status
     code `303`.
 
-- [ ] **Task 9.12:** In `routes/ui_auth.py`, add `POST /logout` endpoint:
+- [x] **Task 9.12:** In `routes/ui_auth.py`, add `POST /logout` endpoint:
   - Clears the `pgms_token` cookie.
   - Returns `RedirectResponse("/ui/login", status_code=303)`.
 
@@ -673,7 +673,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 10 — Templates
 
-- [ ] **Task 10.1:** Create `templates/base.html`. It must:
+- [x] **Task 10.1:** Create `templates/base.html`. It must:
   - Set `<html lang="ar" dir="rtl">`.
   - Load Tailwind CSS from a local built file at `/static/css/tailwind.min.css` (not
     a CDN).
@@ -685,7 +685,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
     inline styles.
   - Set `<meta name="viewport" content="width=device-width, initial-scale=1.0">`.
 
-- [ ] **Task 10.2:** Create `templates/auth/login.html` extending `base.html`. It
+- [x] **Task 10.2:** Create `templates/auth/login.html` extending `base.html`. It
   must:
   - Override `{% block nav %}` with an empty block (no nav on login page).
   - Render a centered card containing: page title from `ar.json` key `"login.title"`,
@@ -697,7 +697,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
     displaying the `error` string in a visually distinct red/warning block.
   - Total rendered page must not require any resource from an external domain.
 
-- [ ] **Task 10.3:** Create a minimal `templates/operator/dashboard.html` extending
+- [x] **Task 10.3:** Create a minimal `templates/operator/dashboard.html` extending
   `base.html`. This is a placeholder only for Phase 1. It must render:
   - A heading with the operator's `full_name`.
   - The operator's assigned `gate_number`.
@@ -708,20 +708,20 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 11 — Jinja2 Template Utilities
 
-- [ ] **Task 11.1:** Create `utils/__init__.py` as an empty file.
+- [x] **Task 11.1:** Create `utils/__init__.py` as an empty file.
 
-- [ ] **Task 11.2:** Create `utils/templates.py`. Define a function
+- [x] **Task 11.2:** Create `utils/templates.py`. Define a function
   `load_translations(path: str = "translations/ar.json") -> dict` that reads and
   returns the JSON file as a Python dict. Cache the result with `@functools.lru_cache`.
 
-- [ ] **Task 11.3:** In `utils/templates.py`, define a Jinja2 filter function
+- [x] **Task 11.3:** In `utils/templates.py`, define a Jinja2 filter function
   `translate_filter(key: str, translations: dict) -> str`:
   - Returns `translations[key]` if the key exists.
   - In development: returns `f"[[{key}]]"`.
   - In production: raises `KeyError` (startup validation will catch missing keys
     separately).
 
-- [ ] **Task 11.4:** Create `utils/jinja.py`. Define a function
+- [x] **Task 11.4:** Create `utils/jinja.py`. Define a function
   `create_jinja2_environment(settings: Settings) -> Jinja2Templates`:
   - Instantiates `Jinja2Templates(directory="templates")`.
   - Adds the `t` global function that wraps `translate_filter` with the loaded
@@ -734,7 +734,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 12 — Application Entry Point (`main.py`)
 
-- [ ] **Task 12.1:** Create `main.py` in the project root. Import `FastAPI`,
+- [x] **Task 12.1:** Create `main.py` in the project root. Import `FastAPI`,
   `get_settings`, and all four routers (`auth`, `users`, `ui_auth`). Instantiate the
   app:
 ```python
@@ -745,18 +745,18 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   )
 ```
 
-- [ ] **Task 12.2:** In `main.py`, add `CORSMiddleware` to the app using
+- [x] **Task 12.2:** In `main.py`, add `CORSMiddleware` to the app using
   `app.add_middleware(CORSMiddleware, ...)`. Read allowed origins from
   `settings.CORS_ORIGINS`. At startup, if `settings.ENVIRONMENT == "production"` and
   `"*"` is in `settings.CORS_ORIGINS`, raise `RuntimeError("Wildcard CORS origin
   forbidden in production")`.
 
-- [ ] **Task 12.3:** In `main.py`, mount the `StaticFiles` directory:
+- [x] **Task 12.3:** In `main.py`, mount the `StaticFiles` directory:
   `app.mount("/static", StaticFiles(directory="static"), name="static")`.
   Also call `create_jinja2_environment(settings)` and store the result as a module-
   level `templates` variable to be imported by route files.
 
-- [ ] **Task 12.4:** In `main.py`, include all routers:
+- [x] **Task 12.4:** In `main.py`, include all routers:
 ```python
   app.include_router(auth_router)
   app.include_router(users_router)
@@ -764,14 +764,14 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 ```
   Add a root redirect: `GET /` → `RedirectResponse("/ui/login")`.
 
-- [ ] **Task 12.5:** In `main.py`, add a global exception handler for
+- [x] **Task 12.5:** In `main.py`, add a global exception handler for
   `HTTPException` that returns a `JSONResponse` with `{"detail": exc.detail, "code":
   getattr(exc, "code", "ERROR")}`. Add a generic `Exception` handler that logs the
   error at `ERROR` level and returns `{"detail": "Internal server error", "code":
   "INTERNAL_ERROR"}` with status `500` (detail is sanitized in non-development
   environments).
 
-- [ ] **Task 12.6:** In `main.py`, add a database availability check as an
+- [x] **Task 12.6:** In `main.py`, add a database availability check as an
   `@app.middleware("http")` or lifespan event. On startup, attempt a simple `SELECT 1`
   via the async engine. If it fails, log `CRITICAL` but allow the app to start. For
   each request to a DB-dependent route, if the DB is unreachable, return
@@ -782,13 +782,13 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 13 — Seed Script
 
-- [ ] **Task 13.1:** Create `seed.py` in the project root. Add an `async def main()`
+- [x] **Task 13.1:** Create `seed.py` in the project root. Add an `async def main()`
   function guarded by `if __name__ == "__main__": asyncio.run(main())`. At the start
   of `main()`: run `alembic upgrade head` programmatically using the Alembic `Config`
   and `command.upgrade` API. If tables do not exist after upgrade, print an error and
   exit.
 
-- [ ] **Task 13.2:** In `seed.py`, implement `seed_admin_user(db, settings,
+- [x] **Task 13.2:** In `seed.py`, implement `seed_admin_user(db, settings,
   auth_service) -> dict` as a standalone async function. It:
   - Reads `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_FULL_NAME` from
     settings (add these as optional fields to `Settings` with `default=None`).
@@ -796,7 +796,7 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   - If not: creates the user with `role=UserRole.ADMIN`, `gate_number=None`.
   - Returns `{"created": True}` or `{"created": False, "reason": "already exists"}`.
 
-- [ ] **Task 13.3:** In `seed.py`, implement `seed_operator_user(db, settings,
+- [x] **Task 13.3:** In `seed.py`, implement `seed_operator_user(db, settings,
   auth_service, gate: int) -> dict` as a standalone async function. It:
   - Reads `SEED_OP_{gate}_USERNAME`, `SEED_OP_{gate}_PASSWORD`,
     `SEED_OP_{gate}_FULL_NAME` from environment directly using `os.environ.get`.
@@ -804,13 +804,13 @@ Name the constraint `"ck_users_role_gate_consistency"`.
   - Creates the operator with `role=UserRole.OPERATOR`, `gate_number=gate`.
   - Returns result dict.
 
-- [ ] **Task 13.4:** In `seed.py`, implement `seed_default_pricing_rule(db) -> dict`
+- [x] **Task 13.4:** In `seed.py`, implement `seed_default_pricing_rule(db) -> dict`
   that creates one `PricingRule` with: `label="السعر الافتراضي"`,
   `rate_per_hour=500`, `minimum_charge=0`, `grace_period_mins=15`, `is_active=True`,
   `effective_from=utcnow()`, `effective_until=None`, `created_by=<admin_user_id>`.
   Skips if any pricing rule with `label="السعر الافتراضي"` already exists.
 
-- [ ] **Task 13.5:** In `seed.py`'s `main()`, call all three seed functions (admin +
+- [x] **Task 13.5:** In `seed.py`'s `main()`, call all three seed functions (admin +
   five operator gates + pricing rule), collect their result dicts, and print a
   formatted summary table to stdout showing each entity, its status (created / skipped),
   and any reason. Commit once after all seeds complete. Rollback and print an error if
@@ -820,31 +820,31 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ## Group 14 — Tests: Configuration
 
-- [ ] **Task 14.1:** Create `tests/__init__.py` and `tests/unit/__init__.py` and
+- [x] **Task 14.1:** Create `tests/__init__.py` and `tests/unit/__init__.py` and
   `tests/integration/__init__.py` as empty files.
 
-- [ ] **Task 14.2:** Create `tests/conftest.py`. Define a `settings_override` pytest
+- [x] **Task 14.2:** Create `tests/conftest.py`. Define a `settings_override` pytest
   fixture (scope `"session"`) that returns a `Settings` instance with:
   `DATABASE_URL="sqlite+aiosqlite:///:memory:"`, `SECRET_KEY="a" * 32`,
   `ENVIRONMENT="development"`, `DEBUG=True`, `JWT_EXPIRE_HOURS=1`.
 
-- [ ] **Task 14.3:** In `tests/conftest.py`, define an `engine` fixture (scope
+- [x] **Task 14.3:** In `tests/conftest.py`, define an `engine` fixture (scope
   `"session"`) that creates an async SQLAlchemy engine from the test `DATABASE_URL`.
   Define a `db_tables` fixture (scope `"session"`, `autouse=True`) that runs
   `Base.metadata.create_all(engine.sync_engine)` once and drops all tables after the
   session.
 
-- [ ] **Task 14.4:** In `tests/conftest.py`, define a `db_session` fixture (scope
+- [x] **Task 14.4:** In `tests/conftest.py`, define a `db_session` fixture (scope
   `"function"`) that opens a new `AsyncSession`, wraps it in a `SAVEPOINT`-based nested
   transaction (for rollback isolation between tests), yields the session, then rolls
   back after each test. This ensures each test starts with a clean database state.
 
-- [ ] **Task 14.5:** In `tests/conftest.py`, define an `auth_service` fixture that
+- [x] **Task 14.5:** In `tests/conftest.py`, define an `auth_service` fixture that
   returns `AuthService(settings_override)`. Define a `user_repo` fixture that returns
   `UserRepository(db_session)`. Define an `audit_service` fixture that returns
   `AuditService(db_session)`.
 
-- [ ] **Task 14.6:** In `tests/conftest.py`, define an `async_client` fixture (scope
+- [x] **Task 14.6:** In `tests/conftest.py`, define an `async_client` fixture (scope
   `"function"`) using `httpx.AsyncClient(app=app, base_url="http://test")`. Override
   the `get_db` dependency on the `app` to yield the `db_session` fixture's session.
   Override `get_settings` to return `settings_override`.
@@ -855,87 +855,87 @@ Name the constraint `"ck_users_role_gate_consistency"`.
 
 ### 15a — AuthService Unit Tests
 
-- [ ] **Task 15.1:** Create `tests/unit/test_auth_service.py`. Write test
+- [x] **Task 15.1:** Create `tests/unit/test_auth_service.py`. Write test
   `test_hash_password_returns_string`: calls `auth_service.hash_password("secret123")`
   and asserts the result is a non-empty string not equal to `"secret123"`.
 
-- [ ] **Task 15.2:** Add test `test_hash_password_different_hashes_for_same_input`:
+- [x] **Task 15.2:** Add test `test_hash_password_different_hashes_for_same_input`:
   hashes the same password twice and asserts the two hashes are not equal (bcrypt
   salting).
 
-- [ ] **Task 15.3:** Add test `test_verify_password_correct`: hashes a password, then
+- [x] **Task 15.3:** Add test `test_verify_password_correct`: hashes a password, then
   calls `verify_password(plain, hashed)` and asserts `True`.
 
-- [ ] **Task 15.4:** Add test `test_verify_password_wrong_password`: hashes
+- [x] **Task 15.4:** Add test `test_verify_password_wrong_password`: hashes
   `"correct"`, then calls `verify_password("wrong", hashed)` and asserts `False`.
 
-- [ ] **Task 15.5:** Add test `test_create_access_token_returns_string`: calls
+- [x] **Task 15.5:** Add test `test_create_access_token_returns_string`: calls
   `create_access_token(user_id=1, role="operator")` and asserts the result is a
   non-empty string containing two `.` characters (JWT structure).
 
-- [ ] **Task 15.6:** Add test `test_decode_token_valid`: creates a token, decodes it,
+- [x] **Task 15.6:** Add test `test_decode_token_valid`: creates a token, decodes it,
   asserts `payload.sub == "1"` and `payload.role == "operator"`.
 
-- [ ] **Task 15.7:** Add test `test_decode_token_expired`: uses `freezegun.freeze_time`
+- [x] **Task 15.7:** Add test `test_decode_token_expired`: uses `freezegun.freeze_time`
   to set the clock 9 hours in the future after creating a 1-hour token. Asserts
   `AuthenticationError` is raised.
 
-- [ ] **Task 15.8:** Add test `test_decode_token_tampered`: modifies one character of
+- [x] **Task 15.8:** Add test `test_decode_token_tampered`: modifies one character of
   a valid token string and asserts `AuthenticationError` is raised.
 
-- [ ] **Task 15.9:** Add test `test_authenticate_user_success` (async): creates a
+- [x] **Task 15.9:** Add test `test_authenticate_user_success` (async): creates a
   `User` record in `db_session` with a hashed password, calls
   `authenticate_user("username", "plain", user_repo)`, asserts the returned user's
   `id` matches.
 
-- [ ] **Task 15.10:** Add test `test_authenticate_user_wrong_password` (async):
+- [x] **Task 15.10:** Add test `test_authenticate_user_wrong_password` (async):
   asserts `AuthenticationError` raised when password is wrong.
 
-- [ ] **Task 15.11:** Add test `test_authenticate_user_not_found` (async): asserts
+- [x] **Task 15.11:** Add test `test_authenticate_user_not_found` (async): asserts
   `AuthenticationError` raised when username does not exist.
 
-- [ ] **Task 15.12:** Add test `test_authenticate_user_inactive` (async): creates an
+- [x] **Task 15.12:** Add test `test_authenticate_user_inactive` (async): creates an
   inactive user (`is_active=False`) and asserts `AuthenticationError` raised.
 
 ### 15b — AuditService Unit Tests
 
-- [ ] **Task 15.13:** Create `tests/unit/test_audit_service.py`. Write test
+- [x] **Task 15.13:** Create `tests/unit/test_audit_service.py`. Write test
   `test_log_creates_record` (async): calls `audit_service.log(actor_id=1,
   action="USER_CREATED", entity_type="user", entity_id=1, before=None,
   after={"name": "x"})`. Queries `AuditLog` from `db_session`. Asserts one record
   exists with the correct `action` and `entity_id`.
 
-- [ ] **Task 15.14:** Add test `test_log_strips_hashed_password` (async): calls `log`
+- [x] **Task 15.14:** Add test `test_log_strips_hashed_password` (async): calls `log`
   with `after={"hashed_password": "secret", "name": "Ahmed"}`. Queries the log record.
   Parses `payload_after` JSON. Asserts `"hashed_password"` is not present in the parsed
   dict and `"name"` is present.
 
-- [ ] **Task 15.15:** Add test `test_log_does_not_raise_on_db_error` (async): patches
+- [x] **Task 15.15:** Add test `test_log_does_not_raise_on_db_error` (async): patches
   `AuditLogRepository.create` to raise `Exception("DB error")`. Calls
   `audit_service.log(...)`. Asserts no exception propagates to the caller.
 
 ### 15c — UserService Unit Tests
 
-- [ ] **Task 15.16:** Create `tests/unit/test_user_service.py`. Write test
+- [x] **Task 15.16:** Create `tests/unit/test_user_service.py`. Write test
   `test_create_user_success` (async): calls `user_service.create_user(UserCreate(...))`
   with valid data. Asserts returned user has the correct `username`, `role`, and that
   `hashed_password` differs from the plaintext input.
 
-- [ ] **Task 15.17:** Add test `test_create_user_duplicate_username` (async): creates
+- [x] **Task 15.17:** Add test `test_create_user_duplicate_username` (async): creates
   a user, then calls `create_user` again with the same username. Asserts
   `HTTPException` with status `409` is raised.
 
-- [ ] **Task 15.18:** Add test `test_deactivate_user_success` (async): creates an
+- [x] **Task 15.18:** Add test `test_deactivate_user_success` (async): creates an
   active user, calls `deactivate_user(user.id, actor_id=admin.id)`. Asserts
   `user.is_active` is `False`.
 
-- [ ] **Task 15.19:** Add test `test_deactivate_user_self` (async): asserts
+- [x] **Task 15.19:** Add test `test_deactivate_user_self` (async): asserts
   `HTTPException(403)` when `user_id == actor_id`.
 
-- [ ] **Task 15.20:** Add test `test_deactivate_user_already_inactive` (async):
+- [x] **Task 15.20:** Add test `test_deactivate_user_already_inactive` (async):
   creates an inactive user, calls `deactivate_user`, asserts `HTTPException(409)`.
 
-- [ ] **Task 15.21:** Add test `test_reset_password_success` (async): resets password,
+- [x] **Task 15.21:** Add test `test_reset_password_success` (async): resets password,
   then calls `auth_service.verify_password(new_plain, user.hashed_password)` and
   asserts `True`.
 

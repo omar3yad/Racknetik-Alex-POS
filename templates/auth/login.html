@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t("login.title") if t is defined else "تسجيل الدخول" }}{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-gray-950 via-gray-900 to-indigo-950">
+    <div class="w-full max-w-md bg-gray-800/80 border border-gray-700/60 backdrop-blur-md rounded-2xl shadow-xl p-8">
+        <h2 class="text-3xl font-extrabold text-center text-white mb-6 tracking-tight">
+            {{ t("login.title") if t is defined else "تسجيل الدخول" }}
+        </h2>
+
+        {% if error %}
+        <div class="bg-red-500/10 border border-red-500/30 text-red-200 rounded-lg p-4 mb-6 text-sm flex items-center gap-3">
+            <svg class="w-5 h-5 text-red-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/ui/login" class="space-y-6">
+            <div>
+                <label for="username" class="block text-sm font-semibold text-gray-300 mb-2">
+                    {{ t("login.username_label") if t is defined else "اسم المستخدم" }}
+                </label>
+                <input type="text" id="username" name="username" required autocomplete="username"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                       style="min-height: 48px; font-size: 16px;" />
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-semibold text-gray-300 mb-2">
+                    {{ t("login.password_label") if t is defined else "كلمة المرور" }}
+                </label>
+                <input type="password" id="password" name="password" required autocomplete="current-password"
+                       class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-200"
+                       style="min-height: 48px; font-size: 16px;" />
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/25 hover:shadow-indigo-500/35 transition duration-200 flex items-center justify-center"
+                    style="min-height: 48px;">
+                {{ t("login.submit_button") if t is defined else "تسجيل الدخول" }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

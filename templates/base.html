@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام إدارة الجراج{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
+    {% block nav %}
+    <nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex justify-between items-center">
+        <div class="text-xl font-bold tracking-wide text-indigo-400">نظام إدارة الجراج</div>
+        <div class="flex items-center gap-4">
+            {% if user %}
+            <span class="text-sm text-gray-300">{{ user.full_name }} ({{ user.role.value }})</span>
+            {% endif %}
+            <form method="POST" action="/ui/logout" class="inline">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-medium py-1.5 px-4 rounded text-sm transition duration-200">
+                    {{ t("nav.logout") if t is defined else "تسجيل الخروج" }}
+                </button>
+            </form>
+        </div>
+    </nav>
+    {% endblock %}
+
+    <main class="flex-grow flex flex-col">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

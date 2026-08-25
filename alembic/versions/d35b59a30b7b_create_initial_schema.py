@@ -1,8 +1,8 @@
 """create initial schema
 
-Revision ID: a71da5149d84
+Revision ID: d35b59a30b7b
 Revises: 
-Create Date: 2026-08-25 02:40:19.974535
+Create Date: 2026-08-25 09:43:34.161329
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a71da5149d84'
+revision: str = 'd35b59a30b7b'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -30,7 +30,7 @@ def upgrade() -> None:
     sa.Column('is_active', sa.Boolean(), server_default='1', nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
-    sa.CheckConstraint("(role = 'operator' AND gate_number IS NOT NULL AND gate_number BETWEEN 1 AND 5) OR (role = 'admin' AND gate_number IS NULL)", name='ck_users_role_gate_consistency'),
+    sa.CheckConstraint("(role = 'OPERATOR' AND gate_number IS NOT NULL AND gate_number BETWEEN 1 AND 5) OR (role = 'ADMIN' AND gate_number IS NULL)", name='ck_users_role_gate_consistency'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)

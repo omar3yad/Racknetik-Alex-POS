@@ -21,8 +21,8 @@ class User(Base, TimestampMixin):
 
     __table_args__ = (
         CheckConstraint(
-            "(role = 'operator' AND gate_number IS NOT NULL AND gate_number BETWEEN 1 AND 5) "
-            "OR (role = 'admin' AND gate_number IS NULL)",
-            name="ck_users_role_gate_consistency"
+            "(role = 'OPERATOR' AND gate_number IS NOT NULL AND gate_number BETWEEN 1 AND 5) "
+            "OR (role = 'ADMIN' AND gate_number IS NULL)",
+            name="ck_users_role_gate_consistency",
         ),
     )

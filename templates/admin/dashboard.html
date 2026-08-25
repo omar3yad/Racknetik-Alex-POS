@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة تحكم المسؤول{% endblock %}
+
+{% block content %}
+<div class="flex-grow flex flex-col items-center justify-center p-6 bg-gray-950">
+    <div class="w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-2xl shadow-xl p-8 text-center">
+        <h1 class="text-3xl font-bold mb-2">مرحباً المسؤول، {{ user.full_name }}</h1>
+        <p class="text-indigo-400 font-semibold mb-6">لوحة تحكم إدارة الجراج</p>
+        
+        <div class="bg-gray-900 border border-gray-700/60 rounded-xl p-8 text-gray-400">
+            <p class="text-lg">لا توجد بيانات بعد</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
