@@ -116,30 +116,6 @@ async def post_logout(request: Request):
     )
     return response
 
-@router.get("/operator/dashboard")
-async def get_operator_dashboard(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    settings = Depends(get_settings),
-):
-    token = request.cookies.get("pgms_token")
-    if not token:
-        return RedirectResponse("/ui/login", status_code=303)
-    try:
-        auth_service = AuthService(settings)
-        payload = auth_service.decode_token(token)
-        user_repo = UserRepository(db)
-        user = await user_repo.get_by_id(int(payload.sub))
-        if not user or not user.is_active or user.role != UserRole.OPERATOR:
-            return RedirectResponse("/ui/login", status_code=303)
-    except Exception:
-        return RedirectResponse("/ui/login", status_code=303)
-
-    return templates.TemplateResponse(
-        request,
-        "operator/dashboard.html",
-        {"user": user},
-    )
 
 @router.get("/admin/dashboard")
 async def get_admin_dashboard(

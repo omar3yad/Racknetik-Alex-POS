@@ -1,3 +1,4 @@
+# E:\Projects\Garage\routes\ui_operator.py
 from datetime import datetime
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -32,6 +33,7 @@ from services.exceptions import (
     SessionNotActiveError,
     NoActiveShiftError,
     NoPricingRuleError,
+    ShiftAlreadyOpenError,
 )
 
 router = APIRouter(prefix="/ui/operator", tags=["ui-operator"])
@@ -169,9 +171,13 @@ async def dashboard_page(
     pricing_repo: PricingRuleRepository = Depends(get_pricing_repo),
 ):
     shift = await shift_service.get_active_shift(current_user.id)
+    with open("debug.log", "a", encoding="utf-8") as f:
+        f.write(f"[DEBUG] dashboard_page: current_user.id={current_user.id}, shift={shift}\n")
     sessions, total = [], 0
     if shift:
         sessions, total = await session_repo.get_by_shift(shift.id, page=1, size=10)
+        with open("debug.log", "a", encoding="utf-8") as f:
+            f.write(f"[DEBUG] dashboard_page: found sessions={len(sessions)}, total={total}\n")
     
     active_rule = await pricing_repo.get_active()
     templates = request.app.state.templates

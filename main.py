@@ -73,6 +73,9 @@ async def db_availability_middleware(request: Request, call_next):
 # Exception handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
+    if request.url.path.startswith("/ui/") and exc.status_code == 401:
+        return RedirectResponse("/ui/login", status_code=303)
+        
     code = getattr(exc, "code", None)
     if not code and exc.headers:
         code = exc.headers.get("X-Error-Code")

@@ -6,15 +6,15 @@
   <title>إيصال وقوف سيارات</title>
   <link rel="stylesheet" href="/static/print.css">
   <style>
-    body { width: 58mm; font-family: 'Courier New', Courier, monospace;
-           font-size: 10pt; direction: rtl; margin: 0; padding: 4mm; background: #fff; color: #000; }
-    .sep { white-space: pre; margin: 2px 0; text-align: center; }
-    .lbl { font-size: 9pt; }
+    body { width: 80mm; font-family: 'Courier New', Courier, monospace;
+           font-size: 13pt; direction: rtl; margin: 0; padding: 4mm; background: #fff; color: #000; }
+    .sep { white-space: pre; margin: 3px 0; text-align: center; }
+    .lbl { font-size: 12pt; }
     .val { font-weight: bold; }
-    .total-line { font-size: 13pt; font-weight: bold; }
+    .total-line { font-size: 17pt; font-weight: bold; }
     .center { text-align: center; }
     .bold { font-weight: bold; }
-    .row { display: flex; justify-content: space-between; margin: 3px 0; }
+    .row { display: flex; justify-content: space-between; margin: 4px 0; }
   </style>
 </head>
 <body class="receipt-body">
@@ -105,20 +105,27 @@
   <p class="sep">--------------------------------</p>
   <div class="center bold">{{ t("receipt.footer") }}</div>
 
-  <!-- Non-print preview controls -->
+  <!-- Controls (hidden during print) -->
   <div class="no-print" style="margin-top: 30px; text-align: center; font-family: sans-serif; border-top: 1px solid #ccc; padding-top: 15px;">
-    <button onclick="window.print()" style="background: #4f46e5; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11pt;">طباعة مرة أخرى</button>
-    <a href="/ui/operator/dashboard" style="display: block; margin-top: 15px; color: #4f46e5; text-decoration: none; font-size: 10pt; font-weight: bold;">رجوع لوحة التحكم</a>
+    <button onclick="doPrint()" style="background: #4f46e5; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11pt; margin-bottom: 12px; display: block; width: 100%;">🖨️ طباعة مرة أخرى</button>
+    <a href="/ui/operator/dashboard" style="display: block; background: #16a34a; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-size: 11pt; font-weight: bold;">✔ رجوع للوحة التحكم</a>
   </div>
 
-  <!-- Print and redirect script -->
   <script>
-    window.addEventListener('load', () => {
-      window.print();
-      setTimeout(() => {
-        window.location.href = '/ui/operator/dashboard';
-      }, 2000);
+    function doPrint() {
+      if (typeof fully !== "undefined" && typeof fully.print === "function") {
+        fully.print();
+      } else {
+        window.print();
+      }
+    }
+
+    // Trigger print once on load with a small delay to let the page render fully
+    window.addEventListener('load', function() {
+      setTimeout(doPrint, 600);
     });
   </script>
 </body>
 </html>
+
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المشغل - نظام إدارة الجراج</title>
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
+    
+    <nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex justify-between items-center">
+        <div class="text-xl font-bold tracking-wide text-indigo-400">نظام إدارة الجراج</div>
+        <div class="flex items-center gap-4">
+            
+            <span class="text-sm text-gray-300">مشغل بوابة 1 (operator)</span>
+            
+            <form method="POST" action="/ui/logout" class="inline">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-medium py-1.5 px-4 rounded text-sm transition duration-200">
+                    تسجيل الخروج
+                </button>
+            </form>
+        </div>
+    </nav>
+    
+
+    <main class="flex-grow flex flex-col">
+        
+<div class="container mx-auto px-4 py-6 max-w-lg flex flex-col flex-grow">
+    
+    
+    <!-- Amber banner warning when shift is closed -->
+    <div class="bg-amber-600 text-white font-bold px-4 py-3 rounded-lg mb-6 shadow-md text-center">
+        افتح شيفتك أولاً
+    </div>
+    
+
+    <!-- Shift Info Bar -->
+    <div class="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6 shadow-lg flex flex-col gap-2">
+        <div class="flex justify-between items-center text-sm text-gray-400">
+            <span>المشغل: <strong class="text-white">مشغل بوابة 1</strong></span>
+            <span>بوابة: <strong class="text-white">1</strong></span>
+        </div>
+        
+        <div class="text-center text-2xl font-mono text-indigo-400 mt-1" id="live-clock">
+            ٠٠:٠٠:٠٠
+        </div>
+    </div>
+
+    <!-- Operation Buttons -->
+    <div class="flex flex-col gap-4 mb-6">
+        <div class="flex gap-4">
+            <!-- Entry Button -->
+            <a href="/ui/operator/entry" 
+               class="flex-1 flex flex-col items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg transition duration-200 py-6 text-xl font-bold min-h-[120px] opacity-50 pointer-events-none"
+               tabindex="-1" aria-disabled="true">
+                <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                </svg>
+                دخول
+            </a>
+            
+            <!-- Exit Button -->
+            <a href="/ui/operator/exit" 
+               class="flex-1 flex flex-col items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg transition duration-200 py-6 text-xl font-bold min-h-[120px] opacity-50 pointer-events-none"
+               tabindex="-1" aria-disabled="true">
+                <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                خروج
+            </a>
+        </div>
+
+        <!-- Lost Card Button -->
+        <a href="/ui/operator/lost-card" 
+           class="flex items-center justify-center bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-lg transition duration-200 py-3 text-lg font-bold min-h-[60px] opacity-50 pointer-events-none"
+           tabindex="-1" aria-disabled="true">
+            <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            كرت مفقود
+        </a>
+    </div>
+
+    <!-- Active Shifts Controls -->
+    <div class="mt-auto mb-6">
+        
+        <a href="/ui/operator/shift/start" class="w-full flex items-center justify-center bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold shadow-md transition duration-200">
+            ابدأ الشيفت
+        </a>
+        
+    </div>
+
+    <!-- Compact Session Table -->
+    
+
+</div>
+
+    </main>
+
+    
+<script src="/static/js/dashboard.js"></script>
+<script>
+    startClock();
+    
+</script>
+
+</body>
+</html>
