@@ -1,3 +1,4 @@
+# tests/unit/test_auth_service.py
 import pytest
 from datetime import datetime, timezone
 import freezegun
@@ -49,8 +50,10 @@ def test_decode_token_expired(auth_service: AuthService):
 def test_decode_token_tampered(auth_service: AuthService):
     token = auth_service.create_access_token(user_id=1, role="operator")
     
-    # Tamper with the token by modifying the last character
-    tampered_token = token[:-1] + ("0" if token[-1] != "0" else "1")
+    # نقوم بتعديل حرف في منتصف التوقيع بدلاً من الحرف الأخير
+    parts = token.split(".")
+    tampered_signature = ("A" if parts[2][0] != "A" else "B") + parts[2][1:]
+    tampered_token = f"{parts[0]}.{parts[1]}.{tampered_signature}"
     
     with pytest.raises(AuthenticationError):
         auth_service.decode_token(tampered_token)
