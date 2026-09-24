@@ -6,6 +6,8 @@ from typing import Any
 from zoneinfo import ZoneInfo
 from starlette.templating import Jinja2Templates
 
+from utils.time import cairo_date_str, utc_to_cairo
+
 CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
 # Load translations
@@ -26,15 +28,45 @@ def cairo_now() -> datetime:
     return datetime.now(CAIRO_TZ)
 
 
+def discrepancy_class_filter(
+    discrepancy_piastres: int | None,
+    computed_total: int = 0,
+) -> str:
+    """Return Tailwind text color class based on discrepancy."""
+    if discrepancy_piastres is None:
+        return "text-gray-400"
+    if discrepancy_piastres == 0:
+        return "text-green-600"
+    if abs(discrepancy_piastres) / max(computed_total, 1) <= 0.05:
+        return "text-amber-500"
+    return "text-red-600"
+
+
 def cairo_date_filter(dt: datetime | date | None, fmt: str = "%Y-%m-%d") -> str:
     """Format a UTC or naive datetime into Cairo local time string."""
     if dt is None:
         return "—"
     if isinstance(dt, date) and not isinstance(dt, datetime):
         return dt.strftime(fmt)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(CAIRO_TZ).strftime(fmt)
+    if fmt == "%Y-%m-%d":
+        return cairo_date_str(dt)
+    return utc_to_cairo(dt).strftime(fmt)
+
+
+def session_status_label_filter(status: str | Any) -> str:
+    """Return Arabic label for session status."""
+    val = status.value if hasattr(status, "value") else status
+    labels = {
+        "ACTIVE": "داخل",
+        "COMPLETED": "خرج",
+        "LOST_CARD": "كرت مفقود",
+    }
+    return labels.get(str(val), str(status) if status is not None else "")
+
+
+def shift_status_label_filter(ended_at: datetime | None) -> str:
+    """Return 'مفتوح' if ended_at is None, else 'مغلق'."""
+    return "مفتوح" if ended_at is None else "مغلق"
 
 
 def cairo_datetime_filter(dt: datetime | None, fmt: str = "%Y-%m-%d %I:%M %p") -> str:
@@ -148,6 +180,9 @@ def register_jinja_filters(templates: Jinja2Templates) -> None:
     templates.env.filters["subscription_status_badge"] = subscription_status_badge_filter
     templates.env.filters["subscription_status_ar"] = subscription_status_ar_filter
     templates.env.filters["subscription_status_label"] = subscription_status_label_filter
+    templates.env.filters["discrepancy_class"] = discrepancy_class_filter
+    templates.env.filters["session_status_label"] = session_status_label_filter
+    templates.env.filters["shift_status_label"] = shift_status_label_filter
 
 
 def create_jinja2_environment(settings=None) -> Jinja2Templates:

@@ -850,7 +850,7 @@ FROM shifts s
 
 ### 6a — New Jinja2 Filters
 
-- [ ] **Task 6.1:** Open `utils/jinja.py`. Add the following filter function:
+- [x] **Task 6.1:** Open `utils/jinja.py`. Add the following filter function:
 ```python
   def discrepancy_class_filter(
       discrepancy_piastres: int | None,
@@ -865,27 +865,27 @@ FROM shifts s
   - Else: return `"text-red-600"`.
   This is a pure function. No imports from the project.
 
-- [ ] **Task 6.2:** In `utils/jinja.py`, add filter:
+- [x] **Task 6.2:** In `utils/jinja.py`, add filter:
 ```python
   def cairo_date_filter(dt: datetime | None) -> str:
 ```
   If `dt is None`: returns `"—"`. Else: calls `cairo_date_str(dt)` from
   `utils/time.py`. Returns the `"YYYY-MM-DD"` string.
 
-- [ ] **Task 6.3:** In `utils/jinja.py`, add filter:
+- [x] **Task 6.3:** In `utils/jinja.py`, add filter:
 ```python
   def session_status_label_filter(status: str) -> str:
 ```
   Returns: `"ACTIVE"` → `"داخل"`, `"COMPLETED"` → `"خرج"`,
   `"LOST_CARD"` → `"كرت مفقود"`. Any other value → `status` unchanged.
 
-- [ ] **Task 6.4:** In `utils/jinja.py`, add filter:
+- [x] **Task 6.4:** In `utils/jinja.py`, add filter:
 ```python
   def shift_status_label_filter(ended_at: datetime | None) -> str:
 ```
   Returns `"مفتوح"` if `ended_at is None`, else `"مغلق"`.
 
-- [ ] **Task 6.5:** In `utils/jinja.py`, update `create_jinja2_environment` to
+- [x] **Task 6.5:** In `utils/jinja.py`, update `create_jinja2_environment` to
   register all four new filters:
   - `"discrepancy_class"` → `discrepancy_class_filter`
   - `"cairo_date"` → `cairo_date_filter`
@@ -896,14 +896,14 @@ FROM shifts s
 
 ### 6b — Admin Translations
 
-- [ ] **Task 6.6:** Open `translations/ar.json`. Add all keys listed in
+- [x] **Task 6.6:** Open `translations/ar.json`. Add all keys listed in
   `spec.md` Section 2.12. Do not remove any existing keys. Validate the JSON is
   syntactically correct after editing (run `python -c "import json;
   json.load(open('translations/ar.json'))"`).
 
 ### 6c — Admin Print CSS
 
-- [ ] **Task 6.7:** Create `static/admin_print.css`. This file contains both
+- [x] **Task 6.7:** Create `static/admin_print.css`. This file contains both
   screen and print styles for the A4 print template:
 ```css
   /* Screen preview styles */
@@ -970,7 +970,7 @@ FROM shifts s
 
 ### 6d — Admin Dashboard JS
 
-- [ ] **Task 6.8:** Create `static/js/admin_dashboard.js`. Contains three
+- [x] **Task 6.8:** Create `static/js/admin_dashboard.js`. Contains three
   functions:
 ```javascript
   async function refreshLiveStats(statsUrl, gatesUrl) { ... }
