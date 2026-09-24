@@ -110,8 +110,9 @@
                         </td>
                         <td class="p-4 font-medium">
                             {% if sub.active_subscription and sub.active_subscription.end_date %}
-                            <span class="{% if sub.active_subscription.days_remaining <= 0 %}text-red-400{% elif sub.active_subscription.days_remaining <= 7 %}text-amber-400{% else %}text-green-400{% endif %}">
-                                {{ sub.active_subscription.days_remaining | days_remaining }}
+                            {% set rem = sub.active_subscription.end_date | days_remaining %}
+                            <span class="{% if rem <= 0 %}text-red-400{% elif rem <= 7 %}text-amber-400{% else %}text-green-400{% endif %}">
+                                {{ rem }} يوم
                             </span>
                             {% else %}
                             <span class="text-gray-600">—</span>

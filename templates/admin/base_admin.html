@@ -24,52 +24,52 @@
         <span class="text-xs bg-indigo-900/60 text-indigo-300 border border-indigo-700/50 px-2 py-0.5 rounded-full">مسؤول</span>
       </div>
       <nav class="p-3 space-y-1 text-sm font-medium flex-1 overflow-y-auto">
-        <a href="/ui/admin/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path == '/ui/admin/dashboard' %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>📊</span>
-          <span>{{ t("admin.nav.dashboard") }}</span>
+          <span>{{ t("admin.nav.dashboard", "لوحة التحكم") }}</span>
         </a>
-        <a href="/ui/admin/shifts" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/shifts" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/shifts') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>⏱️</span>
-          <span>{{ t("admin.nav.shifts") }}</span>
+          <span>{{ t("admin.nav.shifts", "الشيفتات") }}</span>
         </a>
-        <a href="/ui/admin/sessions" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/sessions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/sessions') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>🚗</span>
-          <span>{{ t("admin.nav.sessions") }}</span>
+          <span>{{ t("admin.nav.sessions", "الجلسات") }}</span>
         </a>
-        <a href="/ui/admin/reports/revenue" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/reports/revenue" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/reports') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>📈</span>
-          <span>{{ t("admin.nav.reports") }}</span>
+          <span>{{ t("admin.nav.reports", "التقارير") }}</span>
         </a>
-        <a href="/ui/admin/rates" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/rates" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/rates') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>💰</span>
-          <span>{{ t("admin.nav.rates") }}</span>
+          <span>{{ t("admin.nav.rates", "التعريفات") }}</span>
         </a>
-        <a href="/ui/admin/operators" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/operators" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/operators') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>👷</span>
-          <span>{{ t("admin.nav.operators") }}</span>
+          <span>{{ t("admin.nav.operators", "المشغلين") }}</span>
         </a>
 
         <div class="pt-3 pb-1">
           <p class="px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">الاشتراكات</p>
         </div>
-        <a href="/ui/admin/subscribers" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/subscribers" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/subscribers') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>👥</span>
-          <span>{{ t("subscriptions.subscriber.title") if t is defined else "المشتركين" }}</span>
+          <span>{{ t("admin.nav.subscribers", "المشتركين") }}</span>
         </a>
-        <a href="/ui/admin/plans" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/plans') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>📋</span>
-          <span>{{ t("subscriptions.plan.title") if t is defined else "خطط الاشتراك" }}</span>
+          <span>{{ t("admin.nav.plans", "خطط الاشتراك") }}</span>
         </a>
-        <a href="/ui/admin/subscriptions" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition">
+        <a href="/ui/admin/subscriptions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/subscriptions') %}bg-indigo-600/20 text-indigo-400 font-semibold border-r-2 border-indigo-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>🎫</span>
-          <span>{{ t("subscriptions.subscription.title") if t is defined else "الاشتراكات" }}</span>
+          <span>{{ t("admin.nav.subscriptions", "الاشتراكات") }}</span>
         </a>
 
         <div class="pt-4 mt-4 border-t border-gray-800">
           <form method="POST" action="/ui/logout">
             <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-950/40 hover:text-red-300 transition text-right">
               <span>🚪</span>
-              <span>{{ t("admin.nav.logout") }}</span>
+              <span>{{ t("admin.nav.logout", "تسجيل خروج") }}</span>
             </button>
           </form>
         </div>

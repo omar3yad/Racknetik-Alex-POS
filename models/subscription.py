@@ -39,5 +39,13 @@ class Subscription(Base, TimestampMixin):
     ended_at: Mapped[datetime | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    @property
+    def days_remaining(self) -> int:
+        from utils.time import cairo_now
+        if not self.end_date:
+            return 0
+        today = cairo_now().date()
+        return max((self.end_date - today).days, 0)
+
 
 __all__ = ["SubscriptionStatus", "Subscription"]
