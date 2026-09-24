@@ -15,3 +15,7 @@ class Shift(Base, TimestampMixin):
     opening_cash_egp: Mapped[int] = mapped_column(nullable=False, server_default="0")
     closing_cash_egp: Mapped[int | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    admin_override_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+__all__ = ["Shift"]

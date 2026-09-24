@@ -16,25 +16,25 @@
 
 ### 1a — Model Updates
 
-- [ ] **Task 1.1:** Open `models/shift.py`. Add one column to the `Shift` class
+- [x] **Task 1.1:** Open `models/shift.py`. Add one column to the `Shift` class
   if not already present:
   - `admin_override_note: Mapped[str | None]` — `TEXT`, nullable.
   Verify all other columns from `plan.md` Section 2.2 still exist. Update
   `__all__`. Do not change any other model file in this task.
 
-- [ ] **Task 1.2:** Open `models/__init__.py`. Verify that `Shift` is exported.
+- [x] **Task 1.2:** Open `models/__init__.py`. Verify that `Shift` is exported.
   No new imports needed — this task is a verification step only. If `Shift` is
   missing from `__all__`, add it. Commit no logic changes.
 
 ### 1b — Alembic Migration
 
-- [ ] **Task 1.3:** Generate a new Alembic migration by running:
+- [x] **Task 1.3:** Generate a new Alembic migration by running:
   `alembic revision --autogenerate -m "phase3_shift_admin_override_note"`.
   Open the generated file. Verify `upgrade()` adds the
   `admin_override_note TEXT NULL` column to the `shifts` table. Verify
   `downgrade()` drops the column. Do not edit logic — only verify and commit.
 
-- [ ] **Task 1.4:** Generate a second Alembic migration manually (not autogenerate)
+- [x] **Task 1.4:** Generate a second Alembic migration manually (not autogenerate)
   with message `"phase3_performance_indexes"`. In `upgrade()`, add the following
   indexes using `op.create_index` — skip any that already exist by checking
   `op.get_bind().dialect.has_table` or using `if_not_exists=True` where
@@ -47,7 +47,7 @@
   - `ix_shifts_ended_at` on `shifts(ended_at)`.
   In `downgrade()`, drop all five indexes. Commit the migration file.
 
-- [ ] **Task 1.5:** Run `alembic upgrade head` against the local SQLite dev
+- [x] **Task 1.5:** Run `alembic upgrade head` against the local SQLite dev
   database. Confirm all columns and indexes exist. Fix any migration errors.
   Delete any `test_verify.db` artifact. Commit no source changes in this task.
 
@@ -57,7 +57,7 @@
 
 ### 2a — Cairo Time Utilities
 
-- [ ] **Task 2.1:** Create `utils/time.py`. Define the following pure functions
+- [x] **Task 2.1:** Create `utils/time.py`. Define the following pure functions
   using only Python stdlib (`datetime`, `timedelta`). No external timezone
   libraries. All functions are synchronous:
 
@@ -100,7 +100,7 @@
 
   Add `__all__` listing all six functions.
 
-- [ ] **Task 2.2:** Create `tests/unit/test_time_utils.py`. Write the following
+- [x] **Task 2.2:** Create `tests/unit/test_time_utils.py`. Write the following
   tests using `freezegun.freeze_time`:
 
   - `test_cairo_now_is_utc_plus_2`: freezes UTC at `2024-08-15 22:00:00`.
@@ -118,7 +118,7 @@
 
 ### 2b — CSV Export Utilities
 
-- [ ] **Task 2.3:** Create `utils/csv_export.py`. Add the following at the top
+- [x] **Task 2.3:** Create `utils/csv_export.py`. Add the following at the top
   of the file:
   - Import `csv`, `io`, `codecs`, `asyncio` from stdlib.
   - Define a module-level constant `CSV_BOM = "\ufeff"` (UTF-8 BOM).
@@ -130,7 +130,7 @@
     digits, dot separator). Uses float division for display only — the stored
     value is always integer. Add `# display only — not stored` comment.
 
-- [ ] **Task 2.4:** In `utils/csv_export.py`, define an async generator:
+- [x] **Task 2.4:** In `utils/csv_export.py`, define an async generator:
 ```python
   async def generate_sessions_csv(
       sessions_iter: AsyncIterator[ParkingSession],
@@ -160,7 +160,7 @@
   Writes a single CSV row to a `StringIO` buffer and returns the string
   (including the line terminator).
 
-- [ ] **Task 2.5:** In `utils/csv_export.py`, define a second async generator:
+- [x] **Task 2.5:** In `utils/csv_export.py`, define a second async generator:
 ```python
   async def generate_shifts_csv(
       shifts_iter: AsyncIterator[Shift],
@@ -177,157 +177,12 @@
   else `""`. Add `__all__ = ["generate_sessions_csv", "generate_shifts_csv"]`
   at the bottom of the file.
 
-- [ ] **Task 2.6:** Update `utils/__init__.py` to import and re-export all
+- [x] **Task 2.6:** Update `utils/__init__.py` to import and re-export all
   public names from `utils/time.py` and `utils/csv_export.py`. Rebuild `__all__`.
 
 ---
 
-## Group 3 — Pydantic Schemas
-
-- [ ] **Task 3.1:** Create `schemas/admin_reports.py`. Define the following
-  Pydantic models. All use `model_config = ConfigDict(from_attributes=False)`
-  unless noted. No SQLAlchemy imports:
-
-```python
-  class LiveStatsResponse(BaseModel):
-      active_sessions: int
-      total_capacity: int
-      occupancy_pct: int
-      revenue_today_piastres: int
-      open_shifts: int
-```
-
-```python
-  class GateStatusResponse(BaseModel):
-      gate_number: int
-      operator_name: str | None
-      operator_id: int | None
-      shift_start: datetime | None
-      active_sessions: int
-```
-
-- [ ] **Task 3.2:** In `schemas/admin_reports.py`, add:
-
-```python
-  class RevenueSummaryResponse(BaseModel):
-      total_sessions: int
-      total_revenue_piastres: int
-      avg_duration_minutes: int
-      avg_revenue_piastres: int
-```
-
-```python
-  class GateRevenueResponse(BaseModel):
-      gate_number: int
-      session_count: int
-      total_piastres: int
-```
-
-```python
-  class OperatorRevenueResponse(BaseModel):
-      operator_id: int
-      operator_name: str
-      session_count: int
-      total_piastres: int
-```
-
-```python
-  class DailyRevenueResponse(BaseModel):
-      date_str: str  # "YYYY-MM-DD" Cairo local
-      session_count: int
-      total_piastres: int
-```
-
-- [ ] **Task 3.3:** In `schemas/admin_reports.py`, add:
-
-```python
-  class ReportFilters(BaseModel):
-      start_date: date | None = None
-      end_date: date | None = None
-      gate_number: int | None = Field(None, ge=1, le=5)
-      operator_id: int | None = None
-      status: SessionStatus | None = None
-      card_code: str | None = Field(None, max_length=50)
-      plate_number: str | None = Field(None, max_length=30)
-      long_stay: bool = False
-
-      @model_validator(mode="after")
-      def validate_date_range(self) -> "ReportFilters":
-          if self.start_date and self.end_date:
-              if self.start_date > self.end_date:
-                  raise ValueError("start_date must be <= end_date")
-          return self
-```
-
-  Import `SessionStatus` from `models`. Import `date` from `datetime`.
-
-- [ ] **Task 3.4:** In `schemas/admin_reports.py`, add:
-
-```python
-  class ShiftFilters(BaseModel):
-      operator_id: int | None = None
-      gate_number: int | None = Field(None, ge=1, le=5)
-      status: Literal["open", "closed"] | None = None
-      start_date: date | None = None
-      end_date: date | None = None
-      overdue: bool = False
-
-      @model_validator(mode="after")
-      def validate_date_range(self) -> "ShiftFilters":
-          if self.start_date and self.end_date:
-              if self.start_date > self.end_date:
-                  raise ValueError("start_date must be <= end_date")
-          return self
-```
-
-```python
-  class ForceCloseShiftRequest(BaseModel):
-      closing_cash_egp: int | None = Field(None, ge=0)
-      admin_note: str | None = Field(None, max_length=500)
-```
-
-- [ ] **Task 3.5:** In `schemas/admin_reports.py`, add:
-
-```python
-  class AdminSessionDetail(BaseModel):
-      model_config = ConfigDict(from_attributes=True)
-      # All fields from SessionResponse (import and re-use)
-      id: int
-      card_id: int
-      card_code: str
-      status: SessionStatus
-      gate_number: int
-      shift_id: int
-      operator_id: int
-      entry_time: datetime
-      exit_time: datetime | None
-      plate_number: str | None
-      duration_minutes: int | None
-      pricing_rule_id: int | None
-      amount_charged: int | None
-      is_lost_card: bool
-      lost_card_penalty_applied: int | None
-      payment_method: PaymentMethod
-      is_paid: bool
-      exit_operator_id: int | None
-      exit_shift_id: int | None
-      receipt_printed_at: datetime | None
-      admin_override_by: int | None
-      admin_override_note: str | None
-      notes: str | None
-      created_at: datetime
-      audit_logs: list[AuditLogResponse] = []
-```
-
-  Import `AuditLogResponse` from `schemas.audit_log`, `PaymentMethod` from
-  `models`.
-
-- [ ] **Task 3.6:** In `schemas/admin_reports.py`, add `__all__` listing all
-  eight schemas. Update `schemas/__init__.py` to import and re-export all
-  names from `schemas/admin_reports.py`. Rebuild `schemas/__init__.py` `__all__`.
-
----
-
+ؤ
 ## Group 4 — Repositories
 
 ### 4a — Report Repository

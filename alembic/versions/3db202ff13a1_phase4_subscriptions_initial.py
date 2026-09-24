@@ -30,8 +30,8 @@ def upgrade() -> None:
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('is_active', sa.Boolean(), server_default='1', nullable=False),
         sa.Column('created_by', sa.Integer(), nullable=False),
-        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.ForeignKeyConstraint(['created_by'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id')
     )
@@ -46,8 +46,8 @@ def upgrade() -> None:
         sa.Column('phone_number', sa.String(length=20), nullable=True),
         sa.Column('plate_number', sa.String(length=30), nullable=False),
         sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('subscribers', schema=None) as batch_op:
@@ -73,8 +73,8 @@ def upgrade() -> None:
         sa.Column('cancel_reason', sa.Text(), nullable=True),
         sa.Column('ended_at', sa.DateTime(), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.ForeignKeyConstraint(['card_id'], ['parking_cards.id'], ),
         sa.ForeignKeyConstraint(['collected_by'], ['users.id'], ),
         sa.ForeignKeyConstraint(['plan_id'], ['subscription_plans.id'], ),
@@ -99,18 +99,15 @@ def upgrade() -> None:
         batch_op.create_foreign_key('fk_parking_sessions_subscription_id', 'subscriptions', ['subscription_id'], ['id'])
         batch_op.create_index('ix_parking_sessions_subscription_id', ['subscription_id'], unique=False)
 
-    # 5. Check constraint on parking_sessions
-    op.create_check_constraint(
-        "ck_sessions_subscribed_zero_charge",
-        "parking_sessions",
-        "is_subscribed = FALSE OR amount_charged = 0 OR amount_charged IS NULL"
-    )
+        batch_op.create_check_constraint(
+            "ck_sessions_subscribed_zero_charge",
+            "is_subscribed = FALSE OR amount_charged = 0 OR amount_charged IS NULL"
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint("ck_sessions_subscribed_zero_charge", "parking_sessions", type_="check")
-
     with op.batch_alter_table('parking_sessions', schema=None) as batch_op:
+        batch_op.drop_constraint("ck_sessions_subscribed_zero_charge", type_="check")
         batch_op.drop_index('ix_parking_sessions_subscription_id')
         batch_op.drop_constraint('fk_parking_sessions_subscription_id', type_='foreignkey')
         batch_op.drop_column('is_subscribed')
