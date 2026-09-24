@@ -156,3 +156,83 @@ async def test_operator_subscribed_card_entry_flow(
     )
     assert res_second_entry.status_code == 200
     assert "تم الوصول للحد الأقصى" in res_second_entry.text
+
+
+@pytest.mark.asyncio
+async def test_operator_direct_subscription_registration_and_receipt(
+    async_client,
+    db_session: AsyncSession,
+    auth_service: AuthService,
+):
+    op, shift = await setup_operator_with_shift(db_session, auth_service, async_client)
+
+    # 1. Create active plan and available card
+    card = ParkingCard(card_code="CARD-POS-01", status=CardStatus.AVAILABLE)
+    plan = SubscriptionPlan(
+        label="باقة شهرية POS",
+        duration_days=30,
+        price_piastres=45000,
+        max_entries_per_day=None,
+        is_active=True,
+        created_by=op.id,
+    )
+    db_session.add_all([card, plan])
+    await db_session.commit()
+    await db_session.refresh(card)
+    await db_session.refresh(plan)
+
+    # 2. Check Dashboard has new subscription button
+    res_dash = await async_client.get("/ui/operator/dashboard")
+    assert res_dash.status_code == 200
+    assert "اشتراك جديد" in res_dash.text
+    assert "/ui/operator/subscriptions/new" in res_dash.text
+
+    # 3. Get /ui/operator/subscriptions/new
+    res_form = await async_client.get("/ui/operator/subscriptions/new")
+    assert res_form.status_code == 200
+    assert "تسجيل اشتراك جديد" in res_form.text
+    assert "باقة شهرية POS" in res_form.text
+    assert "تأكيد الدفع وتفعيل الاشتراك" in res_form.text
+
+    # 4. Submit with nonexistent card -> should display error
+    res_err = await async_client.post(
+        "/ui/operator/subscriptions/new",
+        data={
+            "full_name": "مروان إبراهيم",
+            "plate_number": "س س س 555",
+            "phone_number": "01055554444",
+            "plan_id": plan.id,
+            "card_code": "CARD-NONEXISTENT",
+            "notes": "",
+        },
+    )
+    assert res_err.status_code == 400
+    assert "غير مسجل في النظام" in res_err.text
+
+    # 5. Submit valid registration
+    res_submit = await async_client.post(
+        "/ui/operator/subscriptions/new",
+        data={
+            "full_name": "مروان إبراهيم",
+            "plate_number": "س س س 555",
+            "phone_number": "01055554444",
+            "plan_id": plan.id,
+            "card_code": "CARD-POS-01",
+            "notes": "دفع نقدي فوري بالبوابة",
+        },
+        follow_redirects=False,
+    )
+    assert res_submit.status_code == 303
+    receipt_url = res_submit.headers["location"]
+    assert "/ui/operator/subscriptions/receipt/" in receipt_url
+
+    # 6. View Receipt
+    res_receipt = await async_client.get(receipt_url)
+    assert res_receipt.status_code == 200
+    assert "إيصال اشتراك سيارة فوري" in res_receipt.text
+    assert "مروان إبراهيم" in res_receipt.text
+    assert "س س س 555" in res_receipt.text
+    assert "باقة شهرية POS" in res_receipt.text
+    assert "CARD-POS-01" in res_receipt.text
+    assert "طباعة الفاتورة" in res_receipt.text
+    assert "العودة للوحة التحكم" in res_receipt.text

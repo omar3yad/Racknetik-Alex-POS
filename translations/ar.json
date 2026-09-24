@@ -69,5 +69,30 @@
   "errors.subscriber_plate_exists": "رقم اللوحة مسجل بالفعل",
   "errors.subscriber_already_subscribed": "المشترك لديه اشتراك نشط بالفعل",
   "errors.subscription_not_active": "الاشتراك غير نشط",
-  "errors.subscription_daily_limit": "تم الوصول للحد الأقصى من الدخولات اليومية"
+  "errors.subscription_daily_limit": "تم الوصول للحد الأقصى من الدخولات اليومية",
+  "operator": {
+    "dashboard": {
+      "subscription_button": "اشتراك جديد"
+    },
+    "subscription": {
+      "title": "تسجيل اشتراك جديد",
+      "subtitle": "إصدار وتفعيل اشتراك سيارة فوري",
+      "subscriber_name": "اسم المشترك",
+      "subscriber_name_placeholder": "أدخل اسم المشترك بالكامل",
+      "plate_number": "رقم اللوحة",
+      "plate_placeholder": "أ ب ج 1 2 3",
+      "phone_number": "رقم الهاتف",
+      "phone_placeholder": "01012345678",
+      "plan_select": "اختر باقة الاشتراك",
+      "card_code": "مسح كارت الاشتراك (RFID / Barcode)",
+      "card_placeholder": "مرر الكارت أو أدخل الكود",
+      "confirm_btn": "تأكيد الدفع وتفعيل الاشتراك",
+      "back_dashboard": "العودة للرئيسية",
+      "print_receipt": "طباعة الفاتورة",
+      "receipt_title": "إيصال اشتراك جراج",
+      "notes": "ملاحظات (اختياري)",
+      "amount_to_pay": "المبلغ المطلوب دفعه",
+      "created_success": "تم تفعيل الاشتراك بنجاح"
+    }
+  }
 }

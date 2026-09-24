@@ -1,0 +1,116 @@
+<!-- templates/operator/subscription_receipt.html -->
+{% extends "base.html" %}
+
+{% block title %}إيصال اشتراك - {{ receipt.plate_number }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-sm flex flex-col items-center flex-grow">
+    
+    <div id="thermal-receipt" class="bg-white text-black p-5 rounded-lg shadow-2xl w-full text-right font-mono text-xs border border-gray-300 leading-relaxed">
+        
+        <div class="text-center border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div class="text-base font-black tracking-wider">{{ garage_name }}</div>
+            <div class="text-[11px] font-bold mt-1 text-gray-800">إيصال اشتراك سيارة فوري</div>
+            <div class="text-[10px] text-gray-600 mt-0.5">رقم الاشتراك: #{{ subscription.id | zfill(6) }}</div>
+        </div>
+
+        <div class="space-y-1.5 border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div class="flex justify-between">
+                <span class="text-gray-600">المشترك:</span>
+                <span class="font-bold">{{ subscriber.full_name }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">رقم اللوحة:</span>
+                <span class="font-black text-sm text-black">{{ subscription.plate_number }}</span>
+            </div>
+            {% if subscriber.phone_number %}
+            <div class="flex justify-between">
+                <span class="text-gray-600">الهاتف:</span>
+                <span class="font-bold" dir="ltr">{{ subscriber.phone_number }}</span>
+            </div>
+            {% endif %}
+            <div class="flex justify-between">
+                <span class="text-gray-600">كود الكارت:</span>
+                <span class="font-bold font-mono">{{ card.card_code }}</span>
+            </div>
+        </div>
+
+        <div class="space-y-1.5 border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div class="flex justify-between">
+                <span class="text-gray-600">الباقة:</span>
+                <span class="font-bold">{{ plan.label }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">المدة:</span>
+                <span class="font-bold">{{ plan.duration_days }} يوم</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">تاريخ البداية:</span>
+                <span class="font-bold">{{ subscription.start_date | format_date }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-600">تاريخ الانتهاء:</span>
+                <span class="font-black text-black">{{ subscription.end_date | format_date }}</span>
+            </div>
+            {% if plan.max_entries_per_day %}
+            <div class="flex justify-between text-[10px] text-gray-600">
+                <span>حد الدخول:</span>
+                <span>{{ plan.max_entries_per_day }} مرات يومياً</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="border-b border-dashed border-gray-400 pb-3 mb-3">
+            <div class="flex justify-between items-center text-sm font-black">
+                <span>المبلغ المدفوع:</span>
+                <span class="text-base font-black">{{ subscription.amount_paid_piastres | format_egp }}</span>
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-600 mt-1">
+                <span>طريقة الدفع:</span>
+                <span>نقدي (خزينة الوردية)</span>
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-600 mt-0.5">
+                <span>حالة الاشتراك:</span>
+                <span class="font-bold text-green-700">ساري ومفعل</span>
+            </div>
+        </div>
+
+        <div class="text-[10px] text-gray-600 space-y-1 text-center">
+            <div>المشغل: {{ operator_name }} | بوابة: {{ user.gate_number }}</div>
+            <div>تاريخ الإصدار: {{ subscription.created_at | format_datetime }}</div>
+            <div class="pt-2 font-bold text-gray-800 text-[11px]">شكراً لتعاملكم معنا</div>
+            <div class="text-[9px] text-gray-500">يرجى الاحتفاظ بالإيصال لإبرازه عند الطلب</div>
+        </div>
+    </div>
+
+    <div class="w-full flex flex-col gap-3 mt-6 print:hidden">
+        <button onclick="window.print()" 
+                id="btn-print-receipt"
+                class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg transition duration-200 py-4 text-lg font-bold min-h-[56px] active:scale-[0.99]">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            طباعة الفاتورة
+        </button>
+
+        <a href="/ui/operator/dashboard" 
+           id="btn-back-dashboard"
+           class="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 rounded-xl shadow-md transition duration-200 py-3.5 text-base font-bold min-h-[50px]">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            العودة للوحة التحكم
+        </a>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto print trigger if needed on POS
+window.addEventListener('load', () => {
+    // Optional automatic prompt on fresh load
+});
+</script>
+{% endblock %}
