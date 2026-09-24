@@ -1,3 +1,4 @@
+from utils.time import cairo_now
 from schemas.subscriptions import SubscriptionCreate, SubscriberCreate
 from repositories.subscriber_repo import SubscriberRepository
 from repositories.subscription_plan_repo import SubscriptionPlanRepository
@@ -260,6 +261,8 @@ async def process_entry(
             {"request": request, "user": current_user, "error": translations.get("errors.subscription_daily_limit", e.message)},
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         key = get_error_translation_key(e)
         err_msg = translations.get(key, getattr(e, "message", "Internal server error"))
         templates = request.app.state.templates
@@ -344,6 +347,8 @@ async def exit_lookup(
             rule = await pricing_service.get_active_rule()
             calc = pricing_service.calculate(session, rule, datetime.utcnow())
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         key = get_error_translation_key(e)
         err_msg = translations.get(key, getattr(e, "message", "Internal server error"))
         templates = request.app.state.templates
@@ -386,6 +391,8 @@ async def exit_confirm_session(
             {"request": request, "user": current_user, "error": err_msg},
         )
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         templates = request.app.state.templates
         return templates.TemplateResponse(
             "operator/exit_scan.html",
@@ -615,7 +622,7 @@ async def operator_subscription_new_page(
 ):
     shift = await shift_service.get_active_shift(current_user.id)
     plan_repo = SubscriptionPlanRepository(db)
-    plans = await plan_repo.list_all(active_only=True)
+    plans = await plan_repo.get_all(active_only=True)
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -653,7 +660,7 @@ async def operator_subscription_create_submit(
     subscriber_repo = SubscriberRepository(db)
     subscriber_service = SubscriberService(db, subscriber_repo, plate_service, audit_service)
     sub_service = SubscriptionService(db, sub_repo, plan_repo, card_service, audit_service)
-    plans = await plan_repo.list_all(active_only=True)
+    plans = await plan_repo.get_all(active_only=True)
     templates = request.app.state.templates
 
     form_data = {
@@ -682,7 +689,11 @@ async def operator_subscription_create_submit(
 
     try:
         # 1. Validate Card
-        card = await card_service.get_by_code(cleaned_card_code)
+        try:
+            card = await card_service.get_by_code(cleaned_card_code)
+        except CardNotFoundError:
+            card = None
+
         if not card:
             raise CardNotFoundError(f"الكارت '{cleaned_card_code}' غير مسجل في النظام")
         if card.status != CardStatus.AVAILABLE:
@@ -715,7 +726,7 @@ async def operator_subscription_create_submit(
             plan_id=plan.id,
             card_id=card.id,
             start_date=cairo_now().date(),
-            amount_paid_egp=plan.price_egp,
+            amount_paid_egp=(plan.price_piastres / 100.0),
             notes=notes.strip() if notes.strip() else None,
         )
         subscription = await sub_service.create_subscription(subscription_in, admin_id=current_user.id)
@@ -723,6 +734,8 @@ async def operator_subscription_create_submit(
         return RedirectResponse(f"/ui/operator/subscriptions/receipt/{subscription.id}", status_code=303)
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         error_msg = getattr(e, "message", str(e))
         return templates.TemplateResponse(
             "operator/subscription_new.html",

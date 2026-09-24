@@ -1,7 +1,6 @@
 from datetime import date, datetime
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from models.subscription import Subscription, SubscriptionStatus
 from models.parking_card import ParkingCard, CardStatus
@@ -14,13 +13,7 @@ class SubscriptionRepository:
 
     async def get_by_id(self, subscription_id: int) -> Subscription | None:
         result = await self.db.execute(
-            select(Subscription)
-            .where(Subscription.id == subscription_id)
-            .options(
-                selectinload(Subscription.plan),
-                selectinload(Subscription.subscriber),
-                selectinload(Subscription.card),
-            )
+            select(Subscription).where(Subscription.id == subscription_id)
         )
         return result.scalars().first()
 
@@ -35,11 +28,6 @@ class SubscriptionRepository:
                 Subscription.start_date <= today,
                 Subscription.end_date >= today,
             )
-            .options(
-                selectinload(Subscription.plan),
-                selectinload(Subscription.subscriber),
-                selectinload(Subscription.card),
-            )
             .limit(1)
         )
         return result.scalars().first()
@@ -53,14 +41,19 @@ class SubscriptionRepository:
                 Subscription.subscriber_id == subscriber_id,
                 Subscription.status.in_([SubscriptionStatus.ACTIVE, SubscriptionStatus.PENDING]),
             )
-            .options(
-                selectinload(Subscription.plan),
-                selectinload(Subscription.subscriber),
-                selectinload(Subscription.card),
-            )
             .limit(1)
         )
         return result.scalars().first()
+
+    async def get_all_by_subscriber(
+        self, subscriber_id: int
+    ) -> list[Subscription]:
+        result = await self.db.execute(
+            select(Subscription)
+            .where(Subscription.subscriber_id == subscriber_id)
+            .order_by(Subscription.created_at.desc())
+        )
+        return list(result.scalars().all())
 
     async def create(
         self,
@@ -179,14 +172,33 @@ class SubscriptionRepository:
                 Subscription.status == SubscriptionStatus.ACTIVE,
                 Subscription.end_date <= threshold_date,
             )
-            .options(
-                selectinload(Subscription.plan),
-                selectinload(Subscription.subscriber),
-                selectinload(Subscription.card),
-            )
             .order_by(Subscription.end_date.asc())
         )
         return list(result.scalars().all())
+
+    async def get_filtered(
+        self,
+        status: SubscriptionStatus | None = None,
+        plan_id: int | None = None,
+        page: int = 1,
+        size: int = 20,
+    ) -> tuple[list[Subscription], int]:
+        query = select(Subscription)
+        count_query = select(func.count()).select_from(Subscription)
+        if status is not None:
+            query = query.where(Subscription.status == status)
+            count_query = count_query.where(Subscription.status == status)
+        if plan_id is not None:
+            query = query.where(Subscription.plan_id == plan_id)
+            count_query = count_query.where(Subscription.plan_id == plan_id)
+
+        count_res = await self.db.execute(count_query)
+        total = count_res.scalar_one()
+
+        offset = (page - 1) * size
+        query = query.order_by(Subscription.created_at.desc()).offset(offset).limit(size)
+        result = await self.db.execute(query)
+        return list(result.scalars().all()), total
 
     async def list_all(
         self,
@@ -196,11 +208,7 @@ class SubscriptionRepository:
         skip: int = 0,
         limit: int = 50,
     ) -> list[Subscription]:
-        query = select(Subscription).options(
-            selectinload(Subscription.plan),
-            selectinload(Subscription.subscriber),
-            selectinload(Subscription.card),
-        )
+        query = select(Subscription)
         if status is not None:
             query = query.where(Subscription.status == status)
         if plan_id is not None:
@@ -210,6 +218,25 @@ class SubscriptionRepository:
         query = query.order_by(Subscription.created_at.desc()).offset(skip).limit(limit)
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def get_revenue_between(
+        self, start_utc: datetime, end_utc: datetime
+    ) -> int:
+        result = await self.db.execute(
+            select(func.coalesce(func.sum(Subscription.amount_paid_piastres), 0)).where(
+                Subscription.paid_at >= start_utc,
+                Subscription.paid_at < end_utc,
+            )
+        )
+        return int(result.scalar_one())
+
+    async def get_active_count(self) -> int:
+        result = await self.db.execute(
+            select(func.count()).select_from(Subscription).where(
+                Subscription.status == SubscriptionStatus.ACTIVE
+            )
+        )
+        return result.scalar_one()
 
     async def update_fields(self, subscription: Subscription, **kwargs) -> Subscription:
         for key, value in kwargs.items():

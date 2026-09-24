@@ -93,7 +93,7 @@
                     <input type="radio" 
                            name="plan_id" 
                            value="{{ plan.id }}" 
-                           data-price="{{ plan.price_egp }}"
+                           data-price="{{ (plan.price_piastres / 100) }}"
                            data-label="{{ plan.label }}"
                            data-days="{{ plan.duration_days }}"
                            required

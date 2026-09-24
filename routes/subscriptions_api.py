@@ -1,10 +1,11 @@
+from dependencies import require_operator
 from datetime import date
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import get_db
 from dependencies import require_admin, require_any_role
-from models.user import User
+from models.user import User, UserRole
 from models.subscription import SubscriptionStatus
 from repositories.subscription_plan_repo import SubscriptionPlanRepository
 from repositories.subscriber_repo import SubscriberRepository
@@ -155,7 +156,7 @@ async def deactivate_plan(
 @router.post("/subscribers", status_code=status.HTTP_201_CREATED)
 async def create_subscriber(
     data: SubscriberCreate,
-    current_user: User = Depends(require_operator),
+    current_user: User = Depends(require_any_role),
     db: AsyncSession = Depends(get_db),
 ):
     subscriber_repo = SubscriberRepository(db)
@@ -272,7 +273,7 @@ async def update_subscriber(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_subscription(
     data: SubscriptionCreate,
-    current_user: User = Depends(require_operator),
+    current_user: User = Depends(require_any_role),
     db: AsyncSession = Depends(get_db),
 ):
     sub_repo = SubscriptionRepository(db)
