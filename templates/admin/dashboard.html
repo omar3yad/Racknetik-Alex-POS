@@ -1,16 +1,55 @@
-{% extends "base.html" %}
+{% extends "admin/base_admin.html" %}
 
 {% block title %}لوحة تحكم المسؤول{% endblock %}
 
-{% block content %}
-<div class="flex-grow flex flex-col items-center justify-center p-6 bg-gray-950">
-    <div class="w-full max-w-2xl bg-gray-800 border border-gray-700 rounded-2xl shadow-xl p-8 text-center">
-        <h1 class="text-3xl font-bold mb-2">مرحباً المسؤول، {{ user.full_name }}</h1>
-        <p class="text-indigo-400 font-semibold mb-6">لوحة تحكم إدارة الجراج</p>
-        
-        <div class="bg-gray-900 border border-gray-700/60 rounded-xl p-8 text-gray-400">
-            <p class="text-lg">لا توجد بيانات بعد</p>
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-white">لوحة التحكم الرئيسية</h1>
+            <p class="text-sm text-gray-400 mt-1">مرحباً {{ user.full_name }}</p>
         </div>
     </div>
+
+    {% if sub_stats and sub_stats.expiring_soon_count > 0 %}
+    <div class="bg-amber-950/60 border border-amber-500/50 rounded-xl p-4 flex items-center justify-between">
+        <a href="/ui/admin/subscribers?status=expiring" class="text-amber-300 font-medium hover:underline flex items-center gap-2">
+            <span>⚠</span>
+            <span>{{ sub_stats.expiring_soon_count | to_arabic_indic }} {{ t("admin.dashboard.expiring_soon") if t is defined else "اشتراكات تنتهي قريباً (خلال ٧ أيام)" }}</span>
+        </a>
+        <a href="/ui/admin/subscribers?status=expiring" class="text-xs bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg transition font-bold">عرض</a>
+    </div>
+    {% endif %}
+
+    {% if sub_stats and sub_stats.expired_unrenewed_count > 0 %}
+    <div class="bg-red-950/60 border border-red-500/50 rounded-xl p-4 flex items-center justify-between">
+        <a href="/ui/admin/subscribers?status=expired" class="text-red-300 font-medium hover:underline flex items-center gap-2">
+            <span>❌</span>
+            <span>{{ sub_stats.expired_unrenewed_count | to_arabic_indic }} {{ t("admin.dashboard.expired_unrenewed") if t is defined else "اشتراكات منتهية وغير مجددة" }}</span>
+        </a>
+        <a href="/ui/admin/subscribers?status=expired" class="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-lg transition font-bold">عرض</a>
+    </div>
+    {% endif %}
+
+    {% if sub_stats %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <p class="text-xs text-gray-400 font-medium">إجمالي المشتركين</p>
+            <p class="text-2xl font-bold text-white mt-1">{{ sub_stats.total_subscribers | to_arabic_indic }}</p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <p class="text-xs text-gray-400 font-medium">الاشتراكات النشطة</p>
+            <p class="text-2xl font-bold text-green-400 mt-1">{{ sub_stats.active_subscriptions | to_arabic_indic }}</p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <p class="text-xs text-gray-400 font-medium">تنتهي قريباً</p>
+            <p class="text-2xl font-bold text-amber-400 mt-1">{{ sub_stats.expiring_soon_count | to_arabic_indic }}</p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <p class="text-xs text-gray-400 font-medium">اشتراكات منتهية</p>
+            <p class="text-2xl font-bold text-red-400 mt-1">{{ sub_stats.expired_unrenewed_count | to_arabic_indic }}</p>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -1,0 +1,173 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}إنشاء اشتراك للمشترك - {{ subscriber.full_name }}{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-white">إنشاء اشتراك جديد</h1>
+            <p class="text-sm text-gray-400 mt-1">تخصيص كرت وباقة للمشترك</p>
+        </div>
+        <a href="/ui/admin/subscribers/{{ subscriber.id }}" class="text-sm text-gray-400 hover:text-white transition">
+            ← إلغاء ورجوع
+        </a>
+    </div>
+
+    <!-- Read-only Subscriber Summary -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center justify-between">
+        <div>
+            <span class="text-xs text-gray-500 block">المشترك</span>
+            <span class="text-white font-bold text-base">{{ subscriber.full_name }}</span>
+        </div>
+        <div>
+            <span class="text-xs text-gray-500 block">رقم اللوحة</span>
+            <span class="text-indigo-300 font-mono font-bold text-base">{{ subscriber.plate_number }}</span>
+        </div>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
+        <div id="subscribeError" class="hidden mb-6 bg-red-950/60 border border-red-500/60 text-red-300 px-4 py-3 rounded-lg text-sm"></div>
+
+        <form id="subscribeForm" onsubmit="handleCreateSubscription(event)" class="space-y-5">
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">اختر باقة الاشتراك (مطلوب)</label>
+                <select id="subPlanSelect" onchange="onPlanSelected()" required
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                    <option value="">-- اختر الباقة المناسبة --</option>
+                    {% for plan in plans %}
+                    <option value="{{ plan.id }}" data-duration="{{ plan.duration_days }}" data-price="{{ plan.price_piastres / 100.0 }}">
+                        {{ plan.label }} — ({{ plan.duration_days | to_arabic_indic }} يوم) — {{ plan.price_piastres | format_egp }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">تخصيص كرت الدخول (مطلوب)</label>
+                <select id="subCardSelect" required
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-indigo-500">
+                    <option value="">-- اختر كرت متاح من القائمة --</option>
+                    {% for card in cards %}
+                    <option value="{{ card.id }}">{{ card.card_code }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-gray-500 mt-1">يجب اختيار كرت متاح وغير مستخدم حالياً</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-1.5">تاريخ البداية (مطلوب)</label>
+                    <input type="date" id="subStartDate" onchange="calculateComputedEndDate()" required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-300 mb-1.5">المبلغ المدفوع (ج.م)</label>
+                    <input type="number" step="0.01" min="0" id="subAmountPaid" required placeholder="0.00"
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Computed Expiration Preview -->
+            <div id="endPreviewBox" class="bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-4 flex items-center justify-between text-sm">
+                <span class="text-gray-300">تاريخ الانتهاء المحسوب:</span>
+                <span id="computedEndDate" class="font-mono font-bold text-indigo-300 text-base">—</span>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">ملاحظات (اختياري)</label>
+                <textarea id="subNotes" rows="2" placeholder="ملاحظات دفع أو استثناءات..."
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" id="submitSubFormBtn"
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 px-6 rounded-xl transition text-base shadow-lg shadow-green-900/40 flex items-center justify-center gap-2">
+                    <span>إنشاء الاشتراك وتفعيل الكرت</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Set today default date in YYYY-MM-DD
+document.addEventListener('DOMContentLoaded', function() {
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('subStartDate').value = today;
+});
+
+function onPlanSelected() {
+    var planSelect = document.getElementById('subPlanSelect');
+    var selectedOption = planSelect.options[planSelect.selectedIndex];
+    if (selectedOption && selectedOption.value) {
+        var price = selectedOption.getAttribute('data-price');
+        document.getElementById('subAmountPaid').value = price;
+        calculateComputedEndDate();
+    }
+}
+
+function calculateComputedEndDate() {
+    var planSelect = document.getElementById('subPlanSelect');
+    var selectedOption = planSelect.options[planSelect.selectedIndex];
+    var startDateVal = document.getElementById('subStartDate').value;
+    var previewEl = document.getElementById('computedEndDate');
+
+    if (!selectedOption || !selectedOption.value || !startDateVal) {
+        previewEl.innerText = '—';
+        return;
+    }
+
+    var duration = parseInt(selectedOption.getAttribute('data-duration') || 0);
+    var d = new Date(startDateVal);
+    d.setDate(d.getDate() + duration);
+    var endIso = d.toISOString().split('T')[0];
+    previewEl.innerText = endIso;
+}
+
+async function handleCreateSubscription(e) {
+    e.preventDefault();
+    var errorDiv = document.getElementById('subscribeError');
+    var btn = document.getElementById('submitSubFormBtn');
+    errorDiv.classList.add('hidden');
+    errorDiv.innerText = '';
+    btn.disabled = true;
+
+    var planId = parseInt(document.getElementById('subPlanSelect').value);
+    var cardId = parseInt(document.getElementById('subCardSelect').value);
+    var startDate = document.getElementById('subStartDate').value;
+    var amountPaidEgp = parseFloat(document.getElementById('subAmountPaid').value);
+    var notes = document.getElementById('subNotes').value.trim() || null;
+
+    var payload = {
+        subscriber_id: {{ subscriber.id }},
+        plan_id: planId,
+        card_id: cardId,
+        start_date: startDate,
+        amount_paid_egp: amountPaidEgp,
+        notes: notes
+    };
+
+    try {
+        var res = await fetch('/api/v1/subscriptions/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        var data = await res.json();
+        if (res.ok) {
+            window.location.href = '/ui/admin/subscribers/{{ subscriber.id }}';
+        } else {
+            errorDiv.innerText = data.detail || 'حدث خطأ أثناء إنشاء الاشتراك';
+            errorDiv.classList.remove('hidden');
+            btn.disabled = false;
+        }
+    } catch (err) {
+        errorDiv.innerText = 'تعذر الاتصال بالخادم';
+        errorDiv.classList.remove('hidden');
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

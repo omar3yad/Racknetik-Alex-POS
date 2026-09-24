@@ -36,8 +36,13 @@ from schemas.subscriptions import (
     SubscriberResponse,
     SubscriptionCreate,
     SubscriptionRenew,
+    SubscriptionRenewRequest,
     SubscriptionCancel,
+    SubscriptionCancelRequest,
     SubscriptionResponse,
+    PlanRevenueResponse,
+    SubscriptionRevenueSummary,
+    SubscriptionDashboardStats,
 )
 
 __all__ = [
@@ -76,6 +81,11 @@ __all__ = [
     "SubscriberResponse",
     "SubscriptionCreate",
     "SubscriptionRenew",
+    "SubscriptionRenewRequest",
     "SubscriptionCancel",
+    "SubscriptionCancelRequest",
     "SubscriptionResponse",
+    "PlanRevenueResponse",
+    "SubscriptionRevenueSummary",
+    "SubscriptionDashboardStats",
 ]

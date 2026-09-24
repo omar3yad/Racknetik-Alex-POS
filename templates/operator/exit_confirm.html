@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}تأكيد الدفع - نظام إدارة الجراج{% endblock %}
+{% block title %}تأكيد الخروج - نظام إدارة الجراج{% endblock %}
 
 {% block nav %}
 <nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex items-center">
@@ -16,35 +16,58 @@
 {% block content %}
 <div class="container mx-auto px-4 py-6 max-w-md flex flex-col flex-grow justify-center">
 
-    <!-- Card details and price breakdown -->
     <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-xl overflow-hidden mb-6">
         
-        <!-- Header -->
         <div class="bg-gray-750 px-6 py-4 border-b border-gray-700 text-center">
             <span class="text-xs text-indigo-400 block mb-1">تفاصيل الجلسة والكرت</span>
             <h2 class="font-mono text-2xl font-bold tracking-widest text-white">{{ session.card_code }}</h2>
+            {% if session.plate_number %}
+            <span class="text-sm font-semibold text-gray-300 block mt-1">{{ session.plate_number }}</span>
+            {% endif %}
         </div>
 
         <div class="p-6 flex flex-col gap-4">
-            <!-- Timestamps and duration info -->
             <div class="grid grid-cols-2 gap-4 text-sm border-b border-gray-700 pb-4">
                 <div>
                     <span class="block text-gray-500 text-xs mb-1">وقت الدخول</span>
                     <span class="font-semibold text-gray-300">{{ session.entry_time | format_datetime }}</span>
                 </div>
                 <div>
-                    <span class="block text-gray-500 text-xs mb-1">وقت الخروج المتوقع</span>
-                    <span class="font-semibold text-gray-300">{{ calc.duration_minutes | format_duration }}</span>
+                    <span class="block text-gray-500 text-xs mb-1">حالة الاشتراك</span>
+                    {% if is_subscribed %}
+                    <span class="font-semibold text-green-400">مشترك نشط</span>
+                    {% else %}
+                    <span class="font-semibold text-gray-400">عادي (حسب الساعة)</span>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Duration Summary -->
+            {% if is_subscribed %}
+            <div class="text-center my-4">
+                <p class="text-gray-400 text-sm">{{ t("subscriptions.subscription.title") }}</p>
+                <p class="text-green-500 font-bold tracking-tight my-2" style="font-size: 2.25rem;">٠٫٠٠ ج.م</p>
+                {% if subscription %}
+                <p class="text-sm text-gray-300 mt-1">
+                    {{ t("subscriptions.subscription.end") }}:
+                    <span class="font-mono text-indigo-300 font-bold">{{ subscription.end_date | cairo_date }}</span>
+                </p>
+                {% endif %}
+            </div>
+
+            <form method="POST" action="/ui/operator/exit/{{ session.id }}/confirm" class="w-full flex flex-col gap-4 mt-2">
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 text-lg min-h-[64px]">
+                    {{ t("operator.exit.subscription_confirm_button") }}
+                </button>
+                <a href="/ui/operator/exit" class="w-full border border-gray-700 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-lg transition duration-200 text-center text-sm">
+                    إلغاء
+                </a>
+            </form>
+            {% else %}
             <div class="flex justify-between items-center text-sm border-b border-gray-700 pb-4">
                 <span class="text-gray-400">المدة الإجمالية:</span>
                 <span class="font-bold text-white text-lg">{{ calc.duration_minutes | format_duration }}</span>
             </div>
 
-            <!-- Price Calculation Details -->
             <div class="flex flex-col gap-2.5 text-sm border-b border-gray-700 pb-4">
                 <div class="flex justify-between">
                     <span class="text-gray-400">التعريفة النشطة:</span>
@@ -71,7 +94,6 @@
                     <span class="font-semibold text-gray-300">{{ calc.billable_hours }} ساعة</span>
                 </div>
                 
-                <!-- Financial items -->
                 <div class="flex justify-between border-t border-gray-700/50 pt-2">
                     <span class="text-gray-400">المبلغ الأساسي:</span>
                     <span class="font-semibold text-gray-300">{{ calc.base_amount | format_egp }}</span>
@@ -84,23 +106,22 @@
                 {% endif %}
             </div>
 
-            <!-- Grand Total -->
             <div class="flex justify-between items-center">
                 <span class="text-lg font-bold text-gray-300">المبلغ الإجمالي المستحق:</span>
                 <span class="text-3xl font-black text-green-500">{{ calc.total_amount | format_egp }}</span>
             </div>
+
+            <form method="POST" action="/ui/operator/exit/{{ session.id }}/confirm" class="w-full flex flex-col gap-4 mt-2">
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 text-xl min-h-[64px]">
+                    {{ t("operator.exit.confirm_button") }}
+                </button>
+                <a href="/ui/operator/exit" class="w-full border border-gray-700 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-lg transition duration-200 text-center text-sm">
+                    إلغاء
+                </a>
+            </form>
+            {% endif %}
         </div>
     </div>
-
-    <!-- Confirm Form -->
-    <form method="POST" action="/ui/operator/exit/{{ session.id }}/confirm" class="w-full flex flex-col gap-4">
-        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 text-xl min-h-[64px]">
-            {{ t("operator.exit.confirm_button") }}
-        </button>
-        <a href="/ui/operator/exit" class="w-full border border-gray-700 hover:bg-gray-800 text-gray-400 font-bold py-3 rounded-lg transition duration-200 text-center text-sm">
-            إلغاء
-        </a>
-    </form>
 
 </div>
 {% endblock %}

@@ -1,0 +1,233 @@
+{% extends "admin/base_admin.html" %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <!-- Breadcrumb & Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-gray-400 mb-1">
+                <a href="/ui/admin/subscribers" class="hover:text-indigo-400 transition">المشتركون</a>
+                <span>/</span>
+                <span class="text-gray-200">{{ subscriber.full_name }}</span>
+            </div>
+            <h1 class="text-2xl font-black text-white flex items-center gap-2">
+                <span>👤</span>
+                <span>{{ subscriber.full_name }}</span>
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">تاريخ التسجيل: {{ subscriber.created_at | format_datetime }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/ui/admin/subscribers" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold px-4 py-2 rounded-xl transition text-sm">
+                العودة للقائمة
+            </a>
+            {% if active_subscription %}
+            <a href="/ui/admin/subscribers/{{ subscriber.id }}/renew" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl transition text-sm flex items-center gap-1.5">
+                <span>🔄</span>
+                <span>تجديد الاشتراك</span>
+            </a>
+            {% else %}
+            <a href="/ui/admin/subscribers/{{ subscriber.id }}/subscribe" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 py-2 rounded-xl transition text-sm flex items-center gap-1.5">
+                <span>➕</span>
+                <span>اشتراك جديد</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Info Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Subscriber Card -->
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-sm">
+            <h2 class="text-base font-bold text-white mb-4 border-b border-gray-800 pb-3 flex items-center gap-2">
+                <span>📋</span>
+                <span>بيانات المشترك</span>
+            </h2>
+            <dl class="space-y-3 text-sm">
+                <div>
+                    <dt class="text-gray-400">الاسم الكامل</dt>
+                    <dd class="font-bold text-white text-base mt-0.5">{{ subscriber.full_name }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-400">رقم اللوحة</dt>
+                    <dd class="font-bold text-indigo-400 text-base mt-0.5" dir="rtl">{{ subscriber.plate_number or "—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-400">رقم الهاتف</dt>
+                    <dd class="font-medium text-gray-300 mt-0.5">{{ subscriber.phone_number or "—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-400">ملاحظات</dt>
+                    <dd class="text-gray-300 mt-0.5">{{ subscriber.notes or "—" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Active Subscription Summary Card -->
+        <div class="md:col-span-2 bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+            <div>
+                <h2 class="text-base font-bold text-white mb-4 border-b border-gray-800 pb-3 flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                        <span>💳</span>
+                        <span>الاشتراك الحالي</span>
+                    </span>
+                    {% if active_subscription %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">
+                        نشط
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700">
+                        لا يوجد اشتراك نشط
+                    </span>
+                    {% endif %}
+                </h2>
+
+                {% if active_subscription %}
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-800/40 p-3 rounded-xl border border-gray-800">
+                        <span class="text-xs text-gray-400 block">الباقة</span>
+                        <span class="font-bold text-white text-base mt-1 block">{{ active_plan.label if active_plan else "اشتراك" }}</span>
+                    </div>
+                    <div class="bg-gray-800/40 p-3 rounded-xl border border-gray-800">
+                        <span class="text-xs text-gray-400 block">رقم الكرت</span>
+                        <span class="font-mono font-bold text-indigo-400 text-base mt-1 block">{{ active_card.card_code if active_card else (active_subscription.card_id or "—") }}</span>
+                    </div>
+                    <div class="bg-gray-800/40 p-3 rounded-xl border border-gray-800">
+                        <span class="text-xs text-gray-400 block">تاريخ الانتهاء</span>
+                        <span class="font-mono font-bold text-white text-base mt-1 block">{{ active_subscription.end_date | cairo_date }}</span>
+                    </div>
+                    <div class="bg-gray-800/40 p-3 rounded-xl border border-gray-800">
+                        <span class="text-xs text-gray-400 block">الأيام المتبقية</span>
+                        <span class="font-bold text-base mt-1 block {% if (active_subscription.end_date | days_remaining) <= 0 %}text-red-400{% elif (active_subscription.end_date | days_remaining) <= 7 %}text-amber-400{% else %}text-green-400{% endif %}">
+                            {{ active_subscription.end_date | days_remaining }} يوم
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-gray-400 border-t border-gray-800/60 pt-4">
+                    <div>بدأ في: <span class="font-mono text-gray-300">{{ active_subscription.start_date | cairo_date }}</span></div>
+                    <div class="flex items-center gap-2">
+                        <a href="/ui/admin/subscribers/{{ subscriber.id }}/renew" 
+                           class="bg-amber-600 hover:bg-amber-500 text-white font-semibold px-3 py-1.5 rounded-lg transition">
+                            تجديد الاشتراك
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-500 mb-4">لا يوجد اشتراك نشط لهذا المشترك حالياً</p>
+                    <a href="/ui/admin/subscribers/{{ subscriber.id }}/subscribe" 
+                       class="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white font-bold px-5 py-2.5 rounded-xl transition text-sm">
+                        <span>➕</span>
+                        <span>إنشاء اشتراك الآن</span>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Sessions Table -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <span>🚗</span>
+                <span>آخر حركات الدخول والخروج (آخر ١٠)</span>
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right text-sm text-gray-300">
+                <thead class="bg-gray-800/80 text-gray-400 font-semibold border-b border-gray-800">
+                    <tr>
+                        <th class="p-4">رقم الكرت</th>
+                        <th class="p-4">وقت الدخول</th>
+                        <th class="p-4">وقت الخروج</th>
+                        <th class="p-4">المدة</th>
+                        <th class="p-4">المبلغ المحصل</th>
+                        <th class="p-4">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/60">
+                    {% for sess in sessions %}
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="p-4 font-mono font-bold text-white">{{ sess.card_code }}</td>
+                        <td class="p-4 font-mono text-xs">{{ sess.entry_time | format_datetime }}</td>
+                        <td class="p-4 font-mono text-xs">{{ sess.exit_time | format_datetime if sess.exit_time else "داخل الجراج" }}</td>
+                        <td class="p-4">{{ sess.duration_minutes | duration_ar if sess.duration_minutes else "—" }}</td>
+                        <td class="p-4 font-mono font-bold text-green-400">
+                            {% if sess.is_subscribed %}
+                            ٠٫٠٠ ج.م
+                            {% else %}
+                            {{ sess.amount_charged | format_egp }}
+                            {% endif %}
+                        </td>
+                        <td class="p-4">
+                            {% if sess.is_subscribed %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                                اشتراك
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-800 text-gray-300">
+                                نقدي
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-500">
+                            لا توجد حركات دخول مسجلة لهذا المشترك حتى الآن.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Past Subscriptions History -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-gray-800">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                <span>📜</span>
+                <span>سجل الاشتراكات السابقة</span>
+            </h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right text-sm text-gray-300">
+                <thead class="bg-gray-800/80 text-gray-400 font-semibold border-b border-gray-800">
+                    <tr>
+                        <th class="p-4">#</th>
+                        <th class="p-4">الباقة</th>
+                        <th class="p-4">من</th>
+                        <th class="p-4">إلى</th>
+                        <th class="p-4">المبلغ المدفوع</th>
+                        <th class="p-4">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/60">
+                    {% for item in history %}
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="p-4 font-mono text-gray-500">{{ item.subscription.id | to_arabic_indic }}</td>
+                        <td class="p-4 font-bold text-white">{{ item.plan.label if item.plan else "اشتراك" }}</td>
+                        <td class="p-4 font-mono text-xs">{{ item.subscription.start_date | cairo_date }}</td>
+                        <td class="p-4 font-mono text-xs">{{ item.subscription.end_date | cairo_date }}</td>
+                        <td class="p-4 font-mono font-bold text-green-400">{{ item.subscription.amount_paid_piastres | format_egp }}</td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ item.subscription.status.value | subscription_status_class }}">
+                                {{ item.subscription.status.value }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="p-8 text-center text-gray-500">
+                            لا توجد اشتراكات سابقة مسجلة.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

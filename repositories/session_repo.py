@@ -77,17 +77,35 @@ class ParkingSessionRepository:
         query = select(ParkingSession).where(ParkingSession.shift_id == shift_id)
         count_query = select(func.count()).select_from(ParkingSession).where(ParkingSession.shift_id == shift_id)
 
-        # Count total
         count_result = await self.db.execute(count_query)
         total_count = count_result.scalar_one()
 
-        # Execute paginated query ordered by entry time descending
         offset_val = (page - 1) * size
         query = query.order_by(ParkingSession.entry_time.desc()).offset(offset_val).limit(size)
         result = await self.db.execute(query)
         sessions = list(result.scalars().all())
 
         return sessions, total_count
+
+    async def get_by_subscription_ids(
+        self, subscription_ids: list[int], page: int = 1, size: int = 10
+    ) -> tuple[list[ParkingSession], int]:
+        """Returns a paginated list of sessions for specific subscription IDs."""
+        if not subscription_ids:
+            return [], 0
+        query = select(ParkingSession).where(
+            ParkingSession.subscription_id.in_(subscription_ids)
+        )
+        count_query = select(func.count()).select_from(ParkingSession).where(
+            ParkingSession.subscription_id.in_(subscription_ids)
+        )
+        count_result = await self.db.execute(count_query)
+        total_count = count_result.scalar_one()
+
+        offset_val = (page - 1) * size
+        query = query.order_by(ParkingSession.entry_time.desc()).offset(offset_val).limit(size)
+        result = await self.db.execute(query)
+        return list(result.scalars().all()), total_count
 
     async def get_by_id(self, session_id: int) -> ParkingSession | None:
         """Fetches a session by id without locking."""

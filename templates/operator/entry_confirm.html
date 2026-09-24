@@ -3,24 +3,20 @@
 {% block title %}تم تسجيل الدخول - نظام إدارة الجراج{% endblock %}
 
 {% block nav %}
-<!-- Empty navigation for confirmation screens -->
 {% endblock %}
 
 {% block content %}
 <div class="flex-grow flex flex-col items-center justify-center bg-green-900 text-white p-6 min-h-screen text-center">
     
-    <!-- Success Icon -->
     <div class="bg-white/20 p-4 rounded-full mb-6">
         <svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
         </svg>
     </div>
 
-    <!-- Confirmation Text -->
     <h1 class="text-3xl font-bold mb-2">{{ t("operator.entry.success_title") }}</h1>
     <p class="text-lg text-green-200 mb-6">تم فتح الجلسة بنجاح</p>
 
-    <!-- Session Details -->
     <div class="bg-black/25 border border-white/10 rounded-xl p-6 w-full max-w-sm mb-6 shadow-md">
         <div class="mb-4">
             <span class="block text-xs text-green-300 mb-1">كود الكرت</span>
@@ -37,6 +33,19 @@
             <span class="text-sm font-semibold">{{ session.entry_time | format_datetime }}</span>
         </div>
     </div>
+
+    {% if subscription %}
+    <div class="bg-green-500 text-white rounded-lg p-4 mb-6 w-full max-w-sm text-center shadow-lg">
+        <p class="text-xl font-bold">{{ t("operator.entry.subscribed_banner") }}</p>
+        <p class="text-sm mt-1">
+            {{ subscriber.full_name if subscriber else "" }}
+        </p>
+        <p class="text-sm mt-1">
+            {{ t("operator.entry.subscription_expires") }}:
+            {{ subscription.end_date | cairo_date }}
+        </p>
+    </div>
+    {% endif %}
 
     <p class="text-xs text-green-300 animate-pulse">سيتم تحويلك إلى لوحة التحكم تلقائياً...</p>
 </div>

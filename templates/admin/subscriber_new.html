@@ -1,0 +1,99 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("subscriptions.subscriber.new") if t is defined else "إضافة مشترك جديد" }}{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-white">{{ t("subscriptions.subscriber.new") if t is defined else "إضافة مشترك جديد" }}</h1>
+            <p class="text-sm text-gray-400 mt-1">تسجيل بيانات العميل ورقم لوحة السيارة</p>
+        </div>
+        <a href="/ui/admin/subscribers" class="text-sm text-gray-400 hover:text-white transition">
+            ← العودة للقائمة
+        </a>
+    </div>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
+        <div id="newSubError" class="hidden mb-6 bg-red-950/60 border border-red-500/60 text-red-300 px-4 py-3 rounded-lg text-sm"></div>
+
+        <form id="createSubscriberForm" onsubmit="handleCreateSubscriber(event)" class="space-y-5">
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">الاسم الكامل (مطلوب)</label>
+                <input type="text" id="subFullName" required placeholder="مثال: أحمد محمد علي"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">رقم اللوحة (مطلوب)</label>
+                <input type="text" id="subPlateNumber" dir="rtl" required placeholder="مثال: س ص ع ١ ٢ ٣ ٤"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 font-mono text-lg">
+                <p class="text-xs text-gray-500 mt-1">سيتم تطبيع الأرقام والحروف تلقائياً للتحقق والمقارنة</p>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">رقم الهاتف (اختياري)</label>
+                <input type="tel" id="subPhone" placeholder="مثال: 01012345678"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 font-mono">
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">ملاحظات (اختياري)</label>
+                <textarea id="subNotes" rows="3" placeholder="ملاحظات إضافية عن المشترك..."
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500"></textarea>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" id="submitSubBtn"
+                    class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 px-6 rounded-xl transition text-base shadow-lg shadow-green-900/40 flex items-center justify-center gap-2">
+                    <span>{{ t("subscriptions.subscriber.new") if t is defined else "إضافة المشترك" }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+async function handleCreateSubscriber(e) {
+    e.preventDefault();
+    var errorDiv = document.getElementById('newSubError');
+    var btn = document.getElementById('submitSubBtn');
+    errorDiv.classList.add('hidden');
+    errorDiv.innerText = '';
+    btn.disabled = true;
+
+    var fullName = document.getElementById('subFullName').value.trim();
+    var plateNumber = document.getElementById('subPlateNumber').value.trim();
+    var phone = document.getElementById('subPhone').value.trim() || null;
+    var notes = document.getElementById('subNotes').value.trim() || null;
+
+    var payload = {
+        full_name: fullName,
+        plate_number: plateNumber,
+        phone_number: phone,
+        notes: notes
+    };
+
+    try {
+        var res = await fetch('/api/v1/subscriptions/subscribers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        var data = await res.json();
+        if (res.ok && data.data) {
+            window.location.href = '/ui/admin/subscribers/' + data.data.id + '/subscribe';
+        } else {
+            errorDiv.innerText = data.detail || 'حدث خطأ أثناء إضافة المشترك';
+            errorDiv.classList.remove('hidden');
+            btn.disabled = false;
+        }
+    } catch (err) {
+        errorDiv.innerText = 'تعذر الاتصال بالخادم';
+        errorDiv.classList.remove('hidden');
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

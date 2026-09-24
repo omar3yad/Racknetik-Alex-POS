@@ -151,6 +151,9 @@ from routes.sessions import router as sessions_router
 from routes.shifts import router as shifts_router
 from routes.rates import router as rates_router
 from routes.ui_operator import router as ui_operator_router
+from routes.subscriptions_api import router as subscriptions_api_router
+from routes.admin_api import router as admin_api_router
+from routes.ui_subscriptions import router as ui_subscriptions_router
 
 # Include routers
 app.include_router(auth_router)
@@ -161,6 +164,9 @@ app.include_router(sessions_router)
 app.include_router(shifts_router)
 app.include_router(rates_router)
 app.include_router(ui_operator_router)
+app.include_router(subscriptions_api_router)
+app.include_router(admin_api_router)
+app.include_router(ui_subscriptions_router)
 
 @app.get("/")
 async def root_redirect():

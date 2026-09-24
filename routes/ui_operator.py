@@ -1,4 +1,3 @@
-# E:\Projects\Garage\routes\ui_operator.py
 from datetime import datetime
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -14,12 +13,16 @@ from models.parking_card import ParkingCard, CardStatus
 from models.parking_session import ParkingSession, SessionStatus
 from repositories.session_repo import ParkingSessionRepository
 from repositories.rate_repo import PricingRuleRepository
+from repositories.subscription_plan_repo import SubscriptionPlanRepository
+from repositories.subscriber_repo import SubscriberRepository
+from repositories.subscription_repo import SubscriptionRepository
 from services.session_service import SessionService
 from services.card_service import CardService
 from services.pricing_service import PricingService
 from services.shift_service import ShiftService
 from services.audit_service import AuditService
 from services.plate_service import PlateService
+from services.subscription_service import SubscriptionService
 from services.pricing_helpers import format_duration, format_egp
 from schemas.receipt import ReceiptData
 from utils.templates import load_translations
@@ -34,12 +37,14 @@ from services.exceptions import (
     NoActiveShiftError,
     NoPricingRuleError,
     ShiftAlreadyOpenError,
+    SubscriptionDailyLimitReachedError,
 )
 
 router = APIRouter(prefix="/ui/operator", tags=["ui-operator"])
 
 # Load translations for routing rendering errors
 translations = load_translations()
+
 
 def get_error_translation_key(e: Exception) -> str:
     mapping = {
@@ -51,21 +56,27 @@ def get_error_translation_key(e: Exception) -> str:
         "SessionNotFoundError": "errors.session_not_found",
         "SessionNotActiveError": "errors.no_active_session",
         "NoPricingRuleError": "errors.no_pricing_rule",
+        "SubscriptionDailyLimitReachedError": "errors.subscription_daily_limit",
     }
     return mapping.get(e.__class__.__name__, "errors.server_error")
+
 
 def get_session_repo(db: AsyncSession = Depends(get_db)) -> ParkingSessionRepository:
     return ParkingSessionRepository(db)
 
+
 def get_pricing_repo(db: AsyncSession = Depends(get_db)) -> PricingRuleRepository:
     return PricingRuleRepository(db)
+
 
 def get_pricing_service(db: AsyncSession = Depends(get_db)) -> PricingService:
     return PricingService(db)
 
+
 def get_shift_service(db: AsyncSession = Depends(get_db)) -> ShiftService:
     audit_service = AuditService(db)
     return ShiftService(db, audit_service)
+
 
 def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
     card_service = CardService(db)
@@ -74,6 +85,15 @@ def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
     audit_service = AuditService(db)
     shift_service = ShiftService(db, audit_service)
     plate_service = PlateService()
+    sub_repo = SubscriptionRepository(db)
+    plan_repo = SubscriptionPlanRepository(db)
+    sub_service = SubscriptionService(
+        db=db,
+        subscription_repo=sub_repo,
+        plan_repo=plan_repo,
+        card_service=card_service,
+        audit_service=audit_service,
+    )
     return SessionService(
         db=db,
         card_service=card_service,
@@ -82,7 +102,9 @@ def get_session_service(db: AsyncSession = Depends(get_db)) -> SessionService:
         shift_service=shift_service,
         audit_service=audit_service,
         plate_service=plate_service,
+        subscription_service=sub_service,
     )
+
 
 @router.get("/shift/start")
 async def start_shift_page(
@@ -93,13 +115,13 @@ async def start_shift_page(
     active = await shift_service.get_active_shift(current_user.id)
     if active:
         return RedirectResponse("/ui/operator/dashboard", status_code=303)
-    
-    settings = get_settings()
+
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/shift_start.html",
-        {"request": request, "user": current_user}
+        {"request": request, "user": current_user},
     )
+
 
 @router.post("/shift/start")
 async def open_shift(
@@ -108,7 +130,6 @@ async def open_shift(
     current_user: User = Depends(require_operator),
     shift_service: ShiftService = Depends(get_shift_service),
 ):
-    # Form value comes in EGP, convert to piastres internally
     opening_cash_piastres = opening_cash_egp * 100
     try:
         await shift_service.open_shift(
@@ -119,6 +140,7 @@ async def open_shift(
     except ShiftAlreadyOpenError:
         pass
     return RedirectResponse("/ui/operator/dashboard", status_code=303)
+
 
 @router.get("/shift/end")
 async def end_shift_page(
@@ -135,8 +157,9 @@ async def end_shift_page(
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/shift_end.html",
-        {"request": request, "user": current_user, "shift": shift, "summary": summary}
+        {"request": request, "user": current_user, "shift": shift, "summary": summary},
     )
+
 
 @router.post("/shift/end")
 async def close_shift(
@@ -157,10 +180,10 @@ async def close_shift(
         closing_cash_piastres=closing_cash_piastres,
     )
 
-    # Clear cookie and redirect to login
     response = RedirectResponse("/ui/login", status_code=303)
     response.delete_cookie("pgms_token")
     return response
+
 
 @router.get("/dashboard")
 async def dashboard_page(
@@ -171,14 +194,10 @@ async def dashboard_page(
     pricing_repo: PricingRuleRepository = Depends(get_pricing_repo),
 ):
     shift = await shift_service.get_active_shift(current_user.id)
-    with open("debug.log", "a", encoding="utf-8") as f:
-        f.write(f"[DEBUG] dashboard_page: current_user.id={current_user.id}, shift={shift}\n")
     sessions, total = [], 0
     if shift:
         sessions, total = await session_repo.get_by_shift(shift.id, page=1, size=10)
-        with open("debug.log", "a", encoding="utf-8") as f:
-            f.write(f"[DEBUG] dashboard_page: found sessions={len(sessions)}, total={total}\n")
-    
+
     active_rule = await pricing_repo.get_active()
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -190,8 +209,9 @@ async def dashboard_page(
             "sessions": sessions,
             "session_total": total,
             "active_rule": active_rule,
-        }
+        },
     )
+
 
 @router.get("/entry")
 async def entry_scan_page(
@@ -201,8 +221,9 @@ async def entry_scan_page(
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/entry.html",
-        {"request": request, "user": current_user, "error": None}
+        {"request": request, "user": current_user, "error": None},
     )
+
 
 @router.post("/entry")
 async def process_entry(
@@ -213,10 +234,17 @@ async def process_entry(
     session_service: SessionService = Depends(get_session_service),
 ):
     try:
-        session = await session_service.open_session(
+        res = await session_service.open_session(
             card_code=card_code,
             operator_id=current_user.id,
             plate_number=plate_number or None,
+        )
+        session = res.session if hasattr(res, "session") else res[0] if isinstance(res, tuple) else res
+    except SubscriptionDailyLimitReachedError as e:
+        templates = request.app.state.templates
+        return templates.TemplateResponse(
+            "operator/entry.html",
+            {"request": request, "user": current_user, "error": translations.get("errors.subscription_daily_limit", e.message)},
         )
     except Exception as e:
         key = get_error_translation_key(e)
@@ -224,27 +252,45 @@ async def process_entry(
         templates = request.app.state.templates
         return templates.TemplateResponse(
             "operator/entry.html",
-            {"request": request, "user": current_user, "error": err_msg}
+            {"request": request, "user": current_user, "error": err_msg},
         )
 
     return RedirectResponse(f"/ui/operator/entry/confirm/{session.id}", status_code=303)
+
 
 @router.get("/entry/confirm/{session_id}")
 async def entry_confirm_page(
     request: Request,
     session_id: int,
     current_user: User = Depends(require_operator),
+    db: AsyncSession = Depends(get_db),
     session_repo: ParkingSessionRepository = Depends(get_session_repo),
 ):
     session = await session_repo.get_by_id(session_id)
     if not session:
         return RedirectResponse("/ui/operator/dashboard", status_code=303)
 
+    subscription = None
+    subscriber = None
+    if session.subscription_id:
+        sub_repo = SubscriptionRepository(db)
+        subscriber_repo = SubscriberRepository(db)
+        subscription = await sub_repo.get_by_id(session.subscription_id)
+        if subscription:
+            subscriber = await subscriber_repo.get_by_id(subscription.subscriber_id)
+
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/entry_confirm.html",
-        {"request": request, "session": session}
+        {
+            "request": request,
+            "user": current_user,
+            "session": session,
+            "subscription": subscription,
+            "subscriber": subscriber,
+        },
     )
+
 
 @router.get("/exit")
 async def exit_scan_page(
@@ -253,14 +299,15 @@ async def exit_scan_page(
     current_user: User = Depends(require_operator),
 ):
     err_msg = None
-    if error == "SESSION_NOT_ACTIVE":
-        err_msg = translations.get("errors.no_active_session", "Session is not active")
+    if error:
+        err_msg = translations.get(f"errors.{error.lower()}", error)
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/exit_scan.html",
-        {"request": request, "user": current_user, "error": err_msg}
+        {"request": request, "user": current_user, "error": err_msg},
     )
+
 
 @router.post("/exit/lookup")
 async def exit_lookup(
@@ -272,24 +319,39 @@ async def exit_lookup(
     pricing_service: PricingService = Depends(get_pricing_service),
 ):
     card_service = CardService(db)
+    sub_repo = SubscriptionRepository(db)
     try:
         session = await card_service.validate_for_exit(card_code, session_repo)
-        rule = await pricing_service.get_active_rule()
-        calc = pricing_service.calculate(session, rule, datetime.utcnow())
+        subscription = None
+        if getattr(session, "is_subscribed", False) and session.subscription_id:
+            subscription = await sub_repo.get_by_id(session.subscription_id)
+            calc = None
+            rule = None
+        else:
+            rule = await pricing_service.get_active_rule()
+            calc = pricing_service.calculate(session, rule, datetime.utcnow())
     except Exception as e:
         key = get_error_translation_key(e)
         err_msg = translations.get(key, getattr(e, "message", "Internal server error"))
         templates = request.app.state.templates
         return templates.TemplateResponse(
             "operator/exit_scan.html",
-            {"request": request, "user": current_user, "error": err_msg}
+            {"request": request, "user": current_user, "error": err_msg},
         )
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/exit_confirm.html",
-        {"request": request, "session": session, "calc": calc, "rule": rule}
+        {
+            "request": request,
+            "session": session,
+            "calc": calc,
+            "rule": rule,
+            "is_subscribed": getattr(session, "is_subscribed", False),
+            "subscription": subscription,
+        },
     )
+
 
 @router.post("/exit/{session_id}/confirm")
 async def exit_confirm_session(
@@ -299,7 +361,8 @@ async def exit_confirm_session(
     session_service: SessionService = Depends(get_session_service),
 ):
     try:
-        session, calc = await session_service.close_session(session_id, current_user.id)
+        res = await session_service.close_session(session_id, current_user.id)
+        session = res.session if hasattr(res, "session") else res[0] if isinstance(res, tuple) else res
     except SessionNotActiveError:
         return RedirectResponse("/ui/operator/exit?error=SESSION_NOT_ACTIVE", status_code=303)
     except NoPricingRuleError as e:
@@ -307,16 +370,17 @@ async def exit_confirm_session(
         templates = request.app.state.templates
         return templates.TemplateResponse(
             "operator/exit_scan.html",
-            {"request": request, "user": current_user, "error": err_msg}
+            {"request": request, "user": current_user, "error": err_msg},
         )
     except Exception as e:
         templates = request.app.state.templates
         return templates.TemplateResponse(
             "operator/exit_scan.html",
-            {"request": request, "user": current_user, "error": getattr(e, "message", str(e))}
+            {"request": request, "user": current_user, "error": getattr(e, "message", str(e))},
         )
 
     return RedirectResponse(f"/ui/operator/receipt/{session.id}", status_code=303)
+
 
 @router.get("/lost-card")
 async def lost_card_page(
@@ -326,8 +390,9 @@ async def lost_card_page(
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/lost_card.html",
-        {"request": request, "user": current_user, "error": None, "sessions": None}
+        {"request": request, "user": current_user, "error": None, "sessions": None},
     )
+
 
 @router.post("/lost-card")
 async def process_lost_card_lookup(
@@ -343,15 +408,16 @@ async def process_lost_card_lookup(
         err_msg = translations.get("errors.no_active_session_for_plate", "No active sessions found for this plate")
         return templates.TemplateResponse(
             "operator/lost_card.html",
-            {"request": request, "user": current_user, "error": err_msg, "sessions": None}
+            {"request": request, "user": current_user, "error": err_msg, "sessions": None},
         )
     elif len(sessions) == 1:
         return RedirectResponse(f"/ui/operator/lost-card/confirm/{sessions[0].id}", status_code=303)
-    
+
     return templates.TemplateResponse(
         "operator/lost_card.html",
-        {"request": request, "user": current_user, "error": None, "sessions": sessions, "notes": notes}
+        {"request": request, "user": current_user, "error": None, "sessions": sessions, "notes": notes},
     )
+
 
 @router.get("/lost-card/confirm/{session_id}")
 async def lost_card_confirm_page(
@@ -372,8 +438,9 @@ async def lost_card_confirm_page(
     templates = request.app.state.templates
     return templates.TemplateResponse(
         "operator/lost_card_confirm.html",
-        {"request": request, "session": session, "calc": calc, "rule": rule, "notes": notes}
+        {"request": request, "session": session, "calc": calc, "rule": rule, "notes": notes},
     )
+
 
 @router.post("/lost-card/confirm/{session_id}")
 async def resolve_lost_card_confirm(
@@ -389,6 +456,7 @@ async def resolve_lost_card_confirm(
     )
     return RedirectResponse(f"/ui/operator/receipt/{session_id}", status_code=303)
 
+
 @router.get("/receipt/{session_id}")
 async def print_receipt_page(
     request: Request,
@@ -402,7 +470,6 @@ async def print_receipt_page(
     if not session:
         return RedirectResponse("/ui/operator/dashboard", status_code=303)
 
-    # Fetch Operator Username
     operator_name = "Unknown"
     if session.exit_operator_id is not None:
         operator_res = await db.execute(
@@ -410,7 +477,60 @@ async def print_receipt_page(
         )
         operator_name = operator_res.scalar() or "Unknown"
 
-    # Fetch Pricing Rule details
+    await session_service.mark_receipt_printed(session_id)
+    settings = get_settings()
+    templates = request.app.state.templates
+
+    # Handle Subscribed Session Receipt
+    if getattr(session, "is_subscribed", False):
+        sub_repo = SubscriptionRepository(db)
+        subscriber_repo = SubscriberRepository(db)
+        plan_repo = SubscriptionPlanRepository(db)
+
+        subscription = None
+        subscriber = None
+        plan = None
+        if session.subscription_id:
+            subscription = await sub_repo.get_by_id(session.subscription_id)
+            if subscription:
+                subscriber = await subscriber_repo.get_by_id(subscription.subscriber_id)
+                plan = await plan_repo.get_by_id(subscription.plan_id)
+
+        receipt_data = ReceiptData(
+            session_id=session.id,
+            card_code=session.card_code,
+            plate_number=session.plate_number or (subscriber.plate_number if subscriber else "غير مسجل"),
+            gate_number=session.gate_number,
+            operator_name=operator_name,
+            entry_time=session.entry_time,
+            exit_time=session.exit_time or datetime.utcnow(),
+            duration_minutes=session.duration_minutes or 0,
+            duration_display=format_duration(session.duration_minutes or 0),
+            pricing_rule_label=plan.label if plan else "اشتراك",
+            subscription_end_date=subscription.end_date if subscription else None,
+            subscriber_name=subscriber.full_name if subscriber else "مشترك غير مسجل",
+            rate_per_hour=0,
+            grace_period_mins=0,
+            base_amount=0,
+            penalty_amount=0,
+            total_amount=0,
+            total_display="٠٫٠٠ ج.م",
+            payment_method="اشتراك",
+            is_lost_card=False,
+            is_grace_period=False,
+            garage_name="جراج ركنتك",
+        )
+
+        return templates.TemplateResponse(
+            "receipts/thermal_subscription.html",
+            {
+                "request": request,
+                "receipt": receipt_data,
+                "garage_name": settings.APP_NAME,
+            },
+        )
+
+    # Regular Session Receipt
     rule_label = "Standard"
     rate_per_hour = 0
     grace_period_mins = 0
@@ -426,10 +546,6 @@ async def print_receipt_page(
             grace_period_mins = rule.grace_period_mins
             lost_card_penalty = rule.lost_card_penalty
 
-    # Record receipt print timestamp
-    await session_service.mark_receipt_printed(session_id)
-
-    # Calculate receipt base/penalty details
     if session.is_lost_card:
         penalty_amount = lost_card_penalty
         base_amount = (session.amount_charged or 0) - lost_card_penalty
@@ -438,8 +554,6 @@ async def print_receipt_page(
         penalty_amount = 0
         base_amount = session.amount_charged or 0
         is_grace_period = (session.duration_minutes or 0) <= grace_period_mins
-
-    settings = get_settings()
 
     receipt_data = ReceiptData(
         session_id=session.id,
@@ -464,12 +578,11 @@ async def print_receipt_page(
         garage_name="جراج ركنتك",
     )
 
-    templates = request.app.state.templates
     return templates.TemplateResponse(
         "receipts/thermal.html",
         {
             "request": request,
             "receipt": receipt_data,
             "garage_name": settings.APP_NAME,
-        }
+        },
     )

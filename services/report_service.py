@@ -6,7 +6,8 @@ from utils.time import CAIRO_TZ
 
 
 class ReportService:
-    def __init__(self):
+    def __init__(self, db=None):
+        self.db = db
         pass
 
     async def get_subscription_revenue_summary(

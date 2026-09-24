@@ -1,3 +1,4 @@
+import models
 import pytest
 import httpx
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -83,6 +84,12 @@ async def async_client(engine, settings_override: Settings):
         return settings_override
 
     # Apply overrides
+    import main
+    import database
+    orig_main_engine = getattr(main, 'engine', None)
+    orig_db_engine = getattr(database, 'engine', None)
+    main.engine = engine
+    database.engine = engine
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_settings] = override_get_settings
 
@@ -93,3 +100,5 @@ async def async_client(engine, settings_override: Settings):
 
     # Clean up overrides
     app.dependency_overrides.clear()
+    main.engine = orig_main_engine
+    database.engine = orig_db_engine

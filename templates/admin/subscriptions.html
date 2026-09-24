@@ -1,0 +1,121 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("subscriptions.subscription.title") if t is defined else "سجل الاشتراكات" }}{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-white">{{ t("subscriptions.subscription.title") if t is defined else "سجل الاشتراكات" }}</h1>
+            <p class="text-sm text-gray-400 mt-1">عرض ومتابعة سجلات جميع الاشتراكات والحسابات</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 shadow-sm">
+        <form method="GET" action="/ui/admin/subscriptions" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <select name="status" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <option value="">كل الحالات</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>نشط (ACTIVE)</option>
+                    <option value="pending" {% if status == 'pending' %}selected{% endif %}>قيد الانتظار (PENDING)</option>
+                    <option value="expired" {% if status == 'expired' %}selected{% endif %}>منتهي (EXPIRED)</option>
+                    <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>ملغي (CANCELLED)</option>
+                </select>
+            </div>
+            <div>
+                <select name="plan_id" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                    <option value="">كل الباقات</option>
+                    {% for p in plans %}
+                    <option value="{{ p.id }}" {% if plan_id == p.id %}selected{% endif %}>{{ p.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg px-4 py-2 transition">
+                    تصفية
+                </button>
+                <a href="/ui/admin/subscriptions" class="bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg px-3 py-2 flex items-center justify-center transition">
+                    إعادة تعيين
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Overview -->
+    <div class="flex items-center justify-between text-xs text-gray-400 px-1">
+        <span>إجمالي الاشتراكات: <strong class="text-white font-mono font-bold">{{ total | to_arabic_indic }}</strong></span>
+        <span>الصفحة <strong class="text-white font-mono">{{ page | to_arabic_indic }}</strong> من <strong class="text-white font-mono">{{ total_pages | to_arabic_indic }}</strong></span>
+    </div>
+
+    <!-- Subscriptions Table -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right text-sm text-gray-300">
+                <thead class="bg-gray-800/80 text-gray-400 font-semibold border-b border-gray-800">
+                    <tr>
+                        <th class="p-4">#</th>
+                        <th class="p-4">المشترك</th>
+                        <th class="p-4">رقم اللوحة</th>
+                        <th class="p-4">الباقة</th>
+                        <th class="p-4">تاريخ البدء</th>
+                        <th class="p-4">تاريخ الانتهاء</th>
+                        <th class="p-4">المبلغ</th>
+                        <th class="p-4">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/60">
+                    {% for item in subscriptions %}
+                    <tr onclick="window.location.href='/ui/admin/subscribers/{{ item.subscriber.id if item.subscriber else '' }}'"
+                        class="hover:bg-gray-800/50 cursor-pointer transition">
+                        <td class="p-4 font-mono text-gray-500">{{ item.subscription.id | to_arabic_indic }}</td>
+                        <td class="p-4 font-bold text-white">{{ item.subscriber.full_name if item.subscriber else "—" }}</td>
+                        <td class="p-4 font-mono text-indigo-300">{{ item.subscriber.plate_number if item.subscriber else "—" }}</td>
+                        <td class="p-4 font-medium">{{ item.plan.label if item.plan else "—" }}</td>
+                        <td class="p-4 font-mono text-xs">{{ item.subscription.start_date | cairo_date }}</td>
+                        <td class="p-4 font-mono text-xs">{{ item.subscription.end_date | cairo_date }}</td>
+                        <td class="p-4 font-mono font-bold text-green-400">{{ item.subscription.amount_paid_piastres | format_egp }}</td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ item.subscription.status.value | subscription_status_class }}">
+                                {{ item.subscription.status.value }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="p-8 text-center text-gray-500">
+                            لا توجد اشتراكات مسجلة مطابقة للشروط.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="p-4 border-t border-gray-800 flex items-center justify-between text-xs">
+            {% if page > 1 %}
+            <a href="/ui/admin/subscriptions?page={{ page - 1 }}&size={{ size }}&status={{ status }}&plan_id={{ plan_id or '' }}"
+                class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition">
+                السابق
+            </a>
+            {% else %}
+            <span class="text-gray-600 px-3 py-1.5">السابق</span>
+            {% endif %}
+
+            <span class="text-gray-400">{{ page | to_arabic_indic }} / {{ total_pages | to_arabic_indic }}</span>
+
+            {% if page < total_pages %}
+            <a href="/ui/admin/subscriptions?page={{ page + 1 }}&size={{ size }}&status={{ status }}&plan_id={{ plan_id or '' }}"
+                class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-1.5 rounded-lg transition">
+                التالي
+            </a>
+            {% else %}
+            <span class="text-gray-600 px-3 py-1.5">التالي</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,11 +1,18 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from models.parking_card import ParkingCard, CardStatus
+
 
 class ParkingCardRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def get_by_id(self, card_id: int) -> ParkingCard | None:
+        """Fetches a parking card by its ID, returning None if not found."""
+        result = await self.db.execute(
+            select(ParkingCard).where(ParkingCard.id == card_id).limit(1)
+        )
+        return result.scalars().first()
 
     async def get_by_code(self, card_code: str) -> ParkingCard | None:
         """Fetches a parking card by its code, returning None if not found."""
@@ -45,11 +52,9 @@ class ParkingCardRepository:
             query = query.where(ParkingCard.status == status)
             count_query = count_query.where(ParkingCard.status == status)
 
-        # Execute total count
         count_result = await self.db.execute(count_query)
         total_count = count_result.scalar_one()
 
-        # Execute paginated query
         offset_val = (page - 1) * size
         query = query.offset(offset_val).limit(size)
         result = await self.db.execute(query)
@@ -65,5 +70,6 @@ class ParkingCardRepository:
             select(ParkingCard.card_code).where(ParkingCard.card_code.in_(codes))
         )
         return list(result.scalars().all())
+
 
 __all__ = ["ParkingCardRepository"]

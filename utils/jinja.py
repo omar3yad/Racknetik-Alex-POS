@@ -1,47 +1,157 @@
-from datetime import datetime, timedelta
-from functools import partial
-from fastapi.templating import Jinja2Templates
-from config import Settings
-from utils.templates import load_translations, translate_filter
-from services.pricing_helpers import format_duration, format_egp
+import json
+import os
+from datetime import datetime, date, timezone
+from decimal import Decimal
+from typing import Any
+from zoneinfo import ZoneInfo
+from starlette.templating import Jinja2Templates
 
-def format_egp_filter(piastres: int | None) -> str:
-    """Format piastres to localized Arabic EGP separator, returning '—' if None."""
-    if piastres is None:
-        return "—"
-    return format_egp(piastres)
+CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
-def format_duration_filter(minutes: int | None) -> str:
-    """Format minutes to localized Arabic duration description, returning '—' if None."""
-    if minutes is None:
-        return "—"
-    return format_duration(minutes)
+# Load translations
+_translations = {}
+_trans_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "translations", "ar.json")
+if os.path.exists(_trans_path):
+    with open(_trans_path, "r", encoding="utf-8") as f:
+        _translations = json.load(f)
 
-def format_datetime_filter(dt: datetime | None) -> str:
-    """Format datetime converted to Cairo local time (UTC+2) to localized Arabic format."""
+
+def t(key: str, default: str | None = None) -> str:
+    """Translate key using ar.json, returning key if not found."""
+    return _translations.get(key, default if default is not None else key)
+
+
+def cairo_now() -> datetime:
+    """Return the current datetime localized to Africa/Cairo."""
+    return datetime.now(CAIRO_TZ)
+
+
+def cairo_date_filter(dt: datetime | date | None, fmt: str = "%Y-%m-%d") -> str:
+    """Format a UTC or naive datetime into Cairo local time string."""
     if dt is None:
         return "—"
-    # Cairo is UTC+2
-    dt_local = dt + timedelta(hours=2)
-    formatted = dt_local.strftime("%d/%m/%Y %H:%M")
-    # Translate digits to Arabic-Indic
-    trans = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
-    return formatted.translate(trans)
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        return dt.strftime(fmt)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(CAIRO_TZ).strftime(fmt)
 
-def create_jinja2_environment(settings: Settings) -> Jinja2Templates:
+
+def cairo_datetime_filter(dt: datetime | None, fmt: str = "%Y-%m-%d %I:%M %p") -> str:
+    """Format a UTC or naive datetime into full Cairo local datetime string."""
+    if dt is None:
+        return "—"
+    return cairo_date_filter(dt, fmt=fmt)
+
+
+def piastres_to_egp_filter(piastres: int | None) -> str:
+    """Convert integer piastres to EGP currency format string (e.g. 10000 -> 100.00)."""
+    if piastres is None:
+        return "0.00"
+    return f"{Decimal(piastres) / Decimal(100):.2f}"
+
+
+def duration_ar_filter(duration_minutes: int | float | None) -> str:
+    """Convert minutes into Arabic duration string."""
+    if duration_minutes is None:
+        return "—"
+    total = int(duration_minutes)
+    hours = total // 60
+    mins = total % 60
+    parts = []
+    if hours > 0:
+        parts.append(f"{hours} س")
+    if mins > 0 or hours == 0:
+        parts.append(f"{mins} د")
+    return " ".join(parts)
+
+
+def days_remaining_filter(val: date | datetime | int | None) -> int:
+    """Calculate remaining days until end_date relative to Cairo today, or pass-through if int."""
+    if val is None:
+        return 0
+    if isinstance(val, int):
+        return max(val, 0)
+    today = cairo_now().date()
+    if isinstance(val, datetime):
+        val = val.date()
+    return max((val - today).days, 0)
+
+
+def to_arabic_indic(val: Any) -> str:
+    """Convert ASCII digits to Eastern Arabic (Arabic-Indic) digits."""
+    if val is None:
+        return ""
+    mapping = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
+    return str(val).translate(mapping)
+
+
+def zfill_filter(val: Any, width: int = 6) -> str:
+    """Pad string or integer with leading zeroes."""
+    if val is None:
+        return "0".zfill(width)
+    return str(val).zfill(width)
+
+
+def subscription_status_class_filter(status: Any) -> str:
+    """Return Tailwind CSS class based on subscription status."""
+    if status is None:
+        return "bg-gray-100 text-gray-500"
+    val = status.value if hasattr(status, "value") else str(status)
+    val_upper = str(val).upper()
+    classes = {
+        "ACTIVE": "bg-green-100 text-green-800",
+        "EXPIRED": "bg-gray-100 text-gray-800",
+        "CANCELLED": "bg-red-100 text-red-800",
+        "PENDING": "bg-amber-100 text-amber-800",
+        "SUSPENDED": "bg-yellow-100 text-yellow-800",
+    }
+    return classes.get(val_upper, "bg-gray-100 text-gray-500")
+
+
+def subscription_status_label_filter(status: Any) -> str:
+    """Translate subscription status to Arabic."""
+    if status is None:
+        return "—"
+    val = status.value if hasattr(status, "value") else str(status)
+    val_upper = str(val).upper()
+    labels = {
+        "ACTIVE": "نشط",
+        "EXPIRED": "منتهي",
+        "CANCELLED": "ملغي",
+        "PENDING": "معلق",
+        "SUSPENDED": "موقوف",
+    }
+    return labels.get(val_upper, str(val))
+
+
+subscription_status_badge_filter = subscription_status_class_filter
+subscription_status_ar_filter = subscription_status_label_filter
+
+
+def register_jinja_filters(templates: Jinja2Templates) -> None:
+    """Register custom filters and globals to Starlette Jinja2Templates instance."""
+    templates.env.globals["t"] = t
+    templates.env.filters["t"] = t
+    templates.env.filters["cairo_date"] = cairo_date_filter
+    templates.env.filters["cairo_datetime"] = cairo_datetime_filter
+    templates.env.filters["format_date"] = cairo_date_filter
+    templates.env.filters["format_datetime"] = cairo_datetime_filter
+    templates.env.filters["piastres_to_egp"] = piastres_to_egp_filter
+    templates.env.filters["format_egp"] = piastres_to_egp_filter
+    templates.env.filters["duration_ar"] = duration_ar_filter
+    templates.env.filters["format_duration"] = duration_ar_filter
+    templates.env.filters["days_remaining"] = days_remaining_filter
+    templates.env.filters["to_arabic_indic"] = to_arabic_indic
+    templates.env.filters["zfill"] = zfill_filter
+    templates.env.filters["subscription_status_class"] = subscription_status_class_filter
+    templates.env.filters["subscription_status_badge"] = subscription_status_badge_filter
+    templates.env.filters["subscription_status_ar"] = subscription_status_ar_filter
+    templates.env.filters["subscription_status_label"] = subscription_status_label_filter
+
+
+def create_jinja2_environment(settings=None) -> Jinja2Templates:
+    """Factory to create Jinja2Templates with all registered filters and globals."""
     templates = Jinja2Templates(directory="templates")
-    translations = load_translations()
-    t_func = partial(translate_filter, translations=translations)
-    templates.env.globals["t"] = t_func
-
-    # Register filters
-    templates.env.filters["format_egp"] = format_egp_filter
-    templates.env.filters["format_duration"] = format_duration_filter
-    templates.env.filters["format_datetime"] = format_datetime_filter
-    templates.env.filters["zfill"] = lambda s, w: str(s).zfill(w)
-
-    # Register globals
-    templates.env.globals["format_duration"] = format_duration
-    templates.env.globals["format_egp"] = format_egp
-
+    register_jinja_filters(templates)
     return templates

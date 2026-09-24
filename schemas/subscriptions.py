@@ -192,3 +192,14 @@ class SubscriptionDashboardStats(BaseModel):
     expired_unrenewed_count: int
 
     model_config = ConfigDict(from_attributes=True)
+
+SubscriptionRenewRequest = SubscriptionRenew
+SubscriptionCancelRequest = SubscriptionCancel
+
+__all__.extend([
+    'SubscriptionRenewRequest',
+    'SubscriptionCancelRequest',
+    'PlanRevenueResponse',
+    'SubscriptionRevenueSummary',
+    'SubscriptionDashboardStats',
+])

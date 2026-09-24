@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 from pydantic import BaseModel
+
 
 class ReceiptData(BaseModel):
     session_id: int
@@ -12,15 +13,18 @@ class ReceiptData(BaseModel):
     duration_minutes: int
     duration_display: str
     pricing_rule_label: str
-    rate_per_hour: int
-    grace_period_mins: int
-    base_amount: int
-    penalty_amount: int
-    total_amount: int
-    total_display: str
-    payment_method: str
-    is_lost_card: bool
-    is_grace_period: bool
-    garage_name: str
+    rate_per_hour: int = 0
+    grace_period_mins: int = 0
+    base_amount: int = 0
+    penalty_amount: int = 0
+    total_amount: int = 0
+    total_display: str = "٠٫٠٠ ج.م"
+    payment_method: str = "نقدي"
+    is_lost_card: bool = False
+    is_grace_period: bool = False
+    garage_name: str = "جراج ركنتك"
+    subscriber_name: str | None = None
+    subscription_end_date: date | None = None
+
 
 __all__ = ["ReceiptData"]

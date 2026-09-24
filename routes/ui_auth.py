@@ -136,8 +136,21 @@ async def get_admin_dashboard(
     except Exception:
         return RedirectResponse("/ui/login", status_code=303)
 
+    from repositories.subscription_repo import SubscriptionRepository
+    from services.subscription_service import SubscriptionService
+
+    sub_repo = SubscriptionRepository(db)
+    sub_svc = SubscriptionService(
+        db=db,
+        subscription_repo=sub_repo,
+        plan_repo=None,
+        card_service=None,
+        audit_service=None,
+    )
+    sub_stats = await sub_svc.get_dashboard_stats()
+
+    templates = request.app.state.templates
     return templates.TemplateResponse(
-        request,
         "admin/dashboard.html",
-        {"user": user},
+        {"request": request, "user": user, "sub_stats": sub_stats},
     )
