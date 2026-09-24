@@ -16,15 +16,60 @@ settings = get_settings()
 # Initialize Jinja2Templates environment at module-level
 templates = create_jinja2_environment(settings)
 
-# Database connection status check on startup
+# Startup lifespan with database verification and subscription lifecycle management
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # 1. DB connection check
     try:
         async with engine.connect() as conn:
             await conn.execute(text("SELECT 1"))
         logger.info("Database connection checked and verified successfully.")
     except Exception as e:
         logger.critical("Database connection failed during startup check: %s", str(e))
+
+    # 2. Phase 4: Subscription expiry and pending activation
+    try:
+        from database import AsyncSessionLocal
+        from repositories.subscription_repo import SubscriptionRepository
+        from repositories.subscription_plan_repo import SubscriptionPlanRepository
+        from services.subscription_service import SubscriptionService
+        from services.audit_service import AuditService
+
+        async with AsyncSessionLocal() as session:
+            sub_repo = SubscriptionRepository(session)
+            plan_repo = SubscriptionPlanRepository(session)
+            audit_svc = AuditService(session)
+            sub_svc = SubscriptionService(
+                db=session,
+                subscription_repo=sub_repo,
+                plan_repo=plan_repo,
+                card_service=None,
+                audit_service=audit_svc,
+            )
+            expired_count = await sub_svc.expire_overdue_subscriptions()
+            activated_count = await sub_svc.activate_pending_subscriptions()
+
+            if expired_count > 0 or activated_count > 0:
+                await audit_svc.log(
+                    actor_id=1,
+                    action="SUBSCRIPTIONS_BULK_EXPIRED",
+                    entity_type="system",
+                    entity_id=0,
+                    before=None,
+                    after={
+                        "expired_count": expired_count,
+                        "activated_count": activated_count,
+                    },
+                )
+                await session.commit()
+            logger.info(
+                "Subscription startup sync: %d expired, %d activated",
+                expired_count,
+                activated_count,
+            )
+    except Exception as e:
+        logger.critical("Startup subscription lifecycle failed: %s", e)
+
     yield
 
 app = FastAPI(

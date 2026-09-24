@@ -238,3 +238,5 @@
 [DEBUG] dashboard_page: found sessions=0, total=0
 [DEBUG] dashboard_page: current_user.id=14, shift=<models.shift.Shift object at 0x70f0ca87da60>
 [DEBUG] dashboard_page: found sessions=1, total=1
+[DEBUG] dashboard_page: current_user.id=13, shift=<models.shift.Shift object at 0x732b1dbeb4d0>
+[DEBUG] dashboard_page: found sessions=1, total=1

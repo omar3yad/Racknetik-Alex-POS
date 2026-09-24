@@ -162,3 +162,33 @@ __all__ = [
     "SubscriptionCancel",
     "SubscriptionResponse",
 ]
+
+
+# ==========================================
+# Reporting & Dashboard Schemas
+# ==========================================
+
+class PlanRevenueResponse(BaseModel):
+    plan_id: int
+    plan_label: str
+    subscription_count: int
+    total_piastres: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubscriptionRevenueSummary(BaseModel):
+    total_subscriptions: int
+    total_revenue_piastres: int
+    avg_revenue_piastres: int
+    by_plan: list[PlanRevenueResponse]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SubscriptionDashboardStats(BaseModel):
+    active_subscriptions_count: int
+    expiring_soon_count: int
+    expired_unrenewed_count: int
+
+    model_config = ConfigDict(from_attributes=True)

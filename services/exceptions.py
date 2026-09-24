@@ -64,6 +64,52 @@ class NoPricingRuleError(Exception):
         self.message = message
         super().__init__(message)
 
+# Phase 4 — Subscription Exceptions
+class PlanNotFoundError(Exception):
+    def __init__(self, message: str = "Subscription plan not found"):
+        self.message = message
+        super().__init__(message)
+
+class PlanNotActiveError(Exception):
+    def __init__(self, message: str = "Subscription plan is not active"):
+        self.message = message
+        super().__init__(message)
+
+class PlanLabelAlreadyExistsError(Exception):
+    def __init__(self, message: str = "Subscription plan label already exists"):
+        self.message = message
+        super().__init__(message)
+
+class SubscriberNotFoundError(Exception):
+    def __init__(self, message: str = "Subscriber not found"):
+        self.message = message
+        super().__init__(message)
+
+class SubscriberPlateAlreadyExistsError(Exception):
+    def __init__(self, message: str = "Subscriber with this plate number already exists"):
+        self.message = message
+        super().__init__(message)
+
+class SubscriptionNotFoundError(Exception):
+    def __init__(self, message: str = "Subscription not found"):
+        self.message = message
+        super().__init__(message)
+
+class SubscriptionNotActiveError(Exception):
+    def __init__(self, message: str = "Subscription is not active"):
+        self.message = message
+        super().__init__(message)
+
+class SubscriberAlreadyHasActiveSubscriptionError(Exception):
+    def __init__(self, message: str = "Subscriber already has an active or pending subscription"):
+        self.message = message
+        super().__init__(message)
+
+class SubscriptionDailyLimitReachedError(Exception):
+    def __init__(self, message: str = "Daily entry limit reached for this subscription"):
+        self.message = message
+        super().__init__(message)
+
 __all__ = [
     "CardNotFoundError",
     "CardNotAvailableError",
@@ -78,4 +124,13 @@ __all__ = [
     "ShiftNotFoundError",
     "ShiftNotOwnedError",
     "NoPricingRuleError",
+    "PlanNotFoundError",
+    "PlanNotActiveError",
+    "PlanLabelAlreadyExistsError",
+    "SubscriberNotFoundError",
+    "SubscriberPlateAlreadyExistsError",
+    "SubscriptionNotFoundError",
+    "SubscriptionNotActiveError",
+    "SubscriberAlreadyHasActiveSubscriptionError",
+    "SubscriptionDailyLimitReachedError",
 ]

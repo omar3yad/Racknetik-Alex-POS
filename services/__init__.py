@@ -8,7 +8,11 @@ from services.card_service import CardService
 from services.shift_service import ShiftService
 from services.shift_summary import ShiftSummary
 from services.pricing_helpers import format_duration, format_egp, to_arabic_indic
-from services.session_service import SessionService
+from services.session_service import SessionService, SessionOpenResult
+from services.subscription_plan_service import SubscriptionPlanService
+from services.subscriber_service import SubscriberService
+from services.subscription_service import SubscriptionService
+from services.report_service import ReportService
 from services.exceptions import (
     CardNotFoundError,
     CardNotAvailableError,
@@ -23,6 +27,15 @@ from services.exceptions import (
     ShiftNotFoundError,
     ShiftNotOwnedError,
     NoPricingRuleError,
+    PlanNotFoundError,
+    PlanNotActiveError,
+    PlanLabelAlreadyExistsError,
+    SubscriberNotFoundError,
+    SubscriberPlateAlreadyExistsError,
+    SubscriptionNotFoundError,
+    SubscriptionNotActiveError,
+    SubscriberAlreadyHasActiveSubscriptionError,
+    SubscriptionDailyLimitReachedError,
 )
 
 __all__ = [
@@ -40,6 +53,11 @@ __all__ = [
     "format_egp",
     "to_arabic_indic",
     "SessionService",
+    "SessionOpenResult",
+    "SubscriptionPlanService",
+    "SubscriberService",
+    "SubscriptionService",
+    "ReportService",
     "CardNotFoundError",
     "CardNotAvailableError",
     "CardAlreadyActiveError",
@@ -53,4 +71,13 @@ __all__ = [
     "ShiftNotFoundError",
     "ShiftNotOwnedError",
     "NoPricingRuleError",
+    "PlanNotFoundError",
+    "PlanNotActiveError",
+    "PlanLabelAlreadyExistsError",
+    "SubscriberNotFoundError",
+    "SubscriberPlateAlreadyExistsError",
+    "SubscriptionNotFoundError",
+    "SubscriptionNotActiveError",
+    "SubscriberAlreadyHasActiveSubscriptionError",
+    "SubscriptionDailyLimitReachedError",
 ]
