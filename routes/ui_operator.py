@@ -244,9 +244,47 @@ async def process_entry(
     request: Request,
     card_code: str = Form(...),
     plate_number: str = Form(""),
+    force_regular: int = Form(0),
     current_user: User = Depends(require_operator),
     session_service: SessionService = Depends(get_session_service),
+    db: AsyncSession = Depends(get_db),
 ):
+    templates = request.app.state.templates
+    cleaned_card_code = card_code.strip()
+
+    # If not forcing regular session, check if card belongs to an expired subscription
+    if not force_regular:
+        try:
+            card_res = await db.execute(select(ParkingCard).where(ParkingCard.card_code == cleaned_card_code).limit(1))
+            card_obj = card_res.scalars().first()
+            if card_obj:
+                from models.subscription import Subscription, SubscriptionStatus
+                sub_res = await db.execute(
+                    select(Subscription)
+                    .where(Subscription.card_id == card_obj.id)
+                    .order_by(Subscription.id.desc())
+                    .limit(1)
+                )
+                latest_sub = sub_res.scalars().first()
+                if latest_sub and latest_sub.status == SubscriptionStatus.EXPIRED:
+                    sub_repo_local = SubscriberRepository(db)
+                    plan_repo_local = SubscriptionPlanRepository(db)
+                    subscriber_obj = await sub_repo_local.get_by_id(latest_sub.subscriber_id)
+                    plan_obj = await plan_repo_local.get_by_id(latest_sub.plan_id)
+                    return templates.TemplateResponse(
+                        "operator/entry_expired_alert.html",
+                        {
+                            "request": request,
+                            "user": current_user,
+                            "subscription": latest_sub,
+                            "subscriber": subscriber_obj,
+                            "card": card_obj,
+                            "plan": plan_obj,
+                        },
+                    )
+        except Exception as check_err:
+            import traceback
+            traceback.print_exc()
     try:
         res = await session_service.open_session(
             card_code=card_code,
@@ -288,12 +326,15 @@ async def entry_confirm_page(
 
     subscription = None
     subscriber = None
+    plan = None
     if session.subscription_id:
         sub_repo = SubscriptionRepository(db)
         subscriber_repo = SubscriberRepository(db)
+        plan_repo = SubscriptionPlanRepository(db)
         subscription = await sub_repo.get_by_id(session.subscription_id)
         if subscription:
             subscriber = await subscriber_repo.get_by_id(subscription.subscriber_id)
+            plan = await plan_repo.get_by_id(subscription.plan_id)
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -304,6 +345,7 @@ async def entry_confirm_page(
             "session": session,
             "subscription": subscription,
             "subscriber": subscriber,
+            "plan": plan,
         },
     )
 
@@ -616,6 +658,10 @@ async def print_receipt_page(
 async def operator_subscription_new_page(
     request: Request,
     error: str | None = None,
+    card_code: str | None = None,
+    plate_number: str | None = None,
+    full_name: str | None = None,
+    phone_number: str | None = None,
     current_user: User = Depends(require_operator),
     db: AsyncSession = Depends(get_db),
     shift_service: ShiftService = Depends(get_shift_service),
@@ -623,6 +669,16 @@ async def operator_subscription_new_page(
     shift = await shift_service.get_active_shift(current_user.id)
     plan_repo = SubscriptionPlanRepository(db)
     plans = await plan_repo.get_all(active_only=True)
+
+    form_data = {}
+    if card_code:
+        form_data["card_code"] = card_code
+    if plate_number:
+        form_data["plate_number"] = plate_number
+    if full_name:
+        form_data["full_name"] = full_name
+    if phone_number:
+        form_data["phone_number"] = phone_number
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -633,7 +689,7 @@ async def operator_subscription_new_page(
             "shift": shift,
             "plans": plans,
             "error": error,
-            "form_data": {},
+            "form_data": form_data,
         },
     )
 

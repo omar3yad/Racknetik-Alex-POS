@@ -93,6 +93,16 @@
       "notes": "ملاحظات (اختياري)",
       "amount_to_pay": "المبلغ المطلوب دفعه",
       "created_success": "تم تفعيل الاشتراك بنجاح"
+    },
+    "entry": {
+      "subscription_expired_title": "⚠️ تنبيه: اشتراك السيارة منتهي",
+      "subscription_expired_desc": "هذا الكارت مسجل لمشترك سابق ولكن فترة اشتراكه انتهت.",
+      "renew_now_button": "🔄 تجديد الاشتراك الآن",
+      "continue_regular_button": "⏱️ متابعة كدخول عادي (محاسبة بالساعة)",
+      "expired_on": "تاريخ الانتهاء",
+      "previous_plan": "الباقة السابقة",
+      "subscriber_name": "اسم المشترك",
+      "plate_number": "رقم اللوحة"
     }
   }
 }

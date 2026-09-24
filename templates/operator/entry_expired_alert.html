@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}تنبيه: اشتراك منتهي - {{ subscription.plate_number }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-md flex flex-col items-center flex-grow justify-center">
+
+    <!-- Alert Icon & Header -->
+    <div class="bg-amber-500/20 text-amber-400 p-4 rounded-full mb-4 border border-amber-500/30 shadow-lg animate-pulse">
+        <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+    </div>
+
+    <h1 class="text-2xl font-black text-white text-center mb-1">⚠️ اشتراك السيارة منتهي</h1>
+    <p class="text-sm text-amber-300 text-center mb-5 font-semibold">
+        هذا الكارت مسجل لمشترك سابق ولكن فترة اشتراكه انتهت
+    </p>
+
+    <!-- Details Card -->
+    <div class="bg-gray-800 border-2 border-amber-500/50 rounded-2xl p-5 w-full shadow-2xl space-y-3 mb-6">
+        
+        <div class="flex justify-between items-center border-b border-gray-700/80 pb-2.5">
+            <span class="text-xs text-gray-400 font-bold">اسم المشترك:</span>
+            <span class="font-bold text-white text-base">{{ subscriber.full_name }}</span>
+        </div>
+
+        <div class="flex justify-between items-center border-b border-gray-700/80 pb-2.5">
+            <span class="text-xs text-gray-400 font-bold">رقم اللوحة:</span>
+            <span class="font-black text-amber-300 text-lg tracking-wider font-mono">{{ subscription.plate_number }}</span>
+        </div>
+
+        {% if subscriber.phone_number %}
+        <div class="flex justify-between items-center border-b border-gray-700/80 pb-2.5">
+            <span class="text-xs text-gray-400 font-bold">رقم الهاتف:</span>
+            <span class="font-bold text-gray-200 text-sm font-mono" dir="ltr">{{ subscriber.phone_number }}</span>
+        </div>
+        {% endif %}
+
+        <div class="flex justify-between items-center border-b border-gray-700/80 pb-2.5">
+            <span class="text-xs text-gray-400 font-bold">كود الكارت:</span>
+            <span class="font-bold text-purple-300 text-sm font-mono">{{ card.card_code }}</span>
+        </div>
+
+        <div class="flex justify-between items-center border-b border-gray-700/80 pb-2.5">
+            <span class="text-xs text-gray-400 font-bold">الباقة السابقة:</span>
+            <span class="font-bold text-gray-300 text-sm">{{ plan.label if plan else "باقة اشتراك" }}</span>
+        </div>
+
+        <div class="flex justify-between items-center pt-1">
+            <span class="text-xs text-gray-400 font-bold">تاريخ الانتهاء:</span>
+            <span class="font-black text-red-400 text-base font-mono bg-red-950/50 px-2.5 py-1 rounded-lg border border-red-500/30">
+                {{ subscription.end_date | format_date }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="w-full flex flex-col gap-3">
+        
+        <!-- Option 1: Renew Now -->
+        <a href="/ui/operator/subscriptions/new?card_code={{ card.card_code }}&plate_number={{ subscription.plate_number }}&full_name={{ subscriber.full_name }}&phone_number={{ subscriber.phone_number or '' }}"
+           id="btn-renew-subscription"
+           class="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg transition duration-200 py-4 text-lg font-bold min-h-[56px] active:scale-[0.99]">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            🔄 تجديد الاشتراك وتحصيل المبلغ الآن
+        </a>
+
+        <!-- Option 2: Enter as Normal Paid Session -->
+        <form method="POST" action="/ui/operator/entry" class="w-full m-0">
+            <input type="hidden" name="card_code" value="{{ card.card_code }}">
+            <input type="hidden" name="plate_number" value="{{ subscription.plate_number }}">
+            <input type="hidden" name="force_regular" value="1">
+            
+            <button type="submit" 
+                    id="btn-continue-regular"
+                    class="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-amber-300 border-2 border-amber-500/40 rounded-xl shadow-md transition duration-200 py-3.5 text-base font-bold min-h-[52px] active:scale-[0.99]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                ⏱️ متابعة كدخول عادي (محاسبة بالساعة)
+            </button>
+        </form>
+
+        <a href="/ui/operator/dashboard" 
+           class="w-full py-2.5 text-center text-sm font-semibold text-gray-400 hover:text-white transition">
+            إلغاء والعودة للوحة التحكم
+        </a>
+    </div>
+
+</div>
+{% endblock %}
