@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import Any
 from sqlalchemy import select
@@ -11,8 +12,11 @@ from services.exceptions import (
     NoActiveShiftError,
     ShiftNotFoundError,
     ShiftNotOwnedError,
+    ShiftAlreadyClosedError,
 )
 from services.shift_summary import ShiftSummary
+
+logger = logging.getLogger(__name__)
 
 class ShiftService:
     def __init__(self, db: AsyncSession, audit_service: AuditService):
@@ -148,5 +152,58 @@ class ShiftService:
             closing_cash_piastres=closing_cash_piastres,
             discrepancy_piastres=discrepancy,
         )
+
+    async def force_close_shift(
+        self,
+        shift_id: int,
+        admin_id: int,
+        closing_cash_piastres: int | None,
+        admin_note: str | None,
+    ) -> ShiftSummary:
+        """Force-closes a shift by an admin, updates closing cash & notes, and logs audit."""
+        result = await self.db.execute(
+            select(Shift).where(Shift.id == shift_id).limit(1)
+        )
+        shift = result.scalars().first()
+        if not shift:
+            raise ShiftNotFoundError("Shift not found")
+
+        if shift.ended_at is not None:
+            raise ShiftAlreadyClosedError("Shift is already closed")
+
+        before_state = {
+            "ended_at": None,
+            "closing_cash_egp": shift.closing_cash_egp,
+        }
+
+        shift.ended_at = datetime.utcnow()
+        if closing_cash_piastres is not None:
+            shift.closing_cash_egp = closing_cash_piastres
+        if admin_note is not None:
+            shift.admin_override_note = admin_note
+
+        await self.db.flush()
+        summary = await self._compute_summary(shift, shift.closing_cash_egp)
+        await self.db.commit()
+        await self.db.refresh(shift)
+
+        try:
+            await self.audit_service.log(
+                actor_id=admin_id,
+                action="SHIFT_FORCE_CLOSED",
+                entity_type="shift",
+                entity_id=shift_id,
+                before=before_state,
+                after={
+                    "ended_at": shift.ended_at.isoformat() if shift.ended_at else None,
+                    "closing_cash_egp": shift.closing_cash_egp,
+                    "admin_note": admin_note,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to log audit for force_close_shift {shift_id}: {e}")
+
+        return summary
+
 
 __all__ = ["ShiftService"]

@@ -36,6 +36,12 @@ from services.exceptions import (
     SubscriptionNotActiveError,
     SubscriberAlreadyHasActiveSubscriptionError,
     SubscriptionDailyLimitReachedError,
+    ShiftAlreadyClosedError,
+    PricingRuleNotFoundError,
+    RateLabelAlreadyExistsError,
+    InvalidDateRangeError,
+    InvalidReportTypeError,
+    ShiftIdRequiredForPrintError,
 )
 
 __all__ = [
@@ -80,4 +86,10 @@ __all__ = [
     "SubscriptionNotActiveError",
     "SubscriberAlreadyHasActiveSubscriptionError",
     "SubscriptionDailyLimitReachedError",
+    "ShiftAlreadyClosedError",
+    "PricingRuleNotFoundError",
+    "RateLabelAlreadyExistsError",
+    "InvalidDateRangeError",
+    "InvalidReportTypeError",
+    "ShiftIdRequiredForPrintError",
 ]

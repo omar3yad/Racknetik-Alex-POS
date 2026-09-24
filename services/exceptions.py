@@ -110,6 +110,36 @@ class SubscriptionDailyLimitReachedError(Exception):
         self.message = message
         super().__init__(message)
 
+class ShiftAlreadyClosedError(Exception):
+    def __init__(self, message: str = "Shift is already closed"):
+        self.message = message
+        super().__init__(message)
+
+class PricingRuleNotFoundError(Exception):
+    def __init__(self, message: str = "Pricing rule not found"):
+        self.message = message
+        super().__init__(message)
+
+class RateLabelAlreadyExistsError(Exception):
+    def __init__(self, message: str = "Pricing rule label already exists"):
+        self.message = message
+        super().__init__(message)
+
+class InvalidDateRangeError(Exception):
+    def __init__(self, message: str = "Invalid date range: start_date must be <= end_date"):
+        self.message = message
+        super().__init__(message)
+
+class InvalidReportTypeError(Exception):
+    def __init__(self, message: str = "Invalid report type"):
+        self.message = message
+        super().__init__(message)
+
+class ShiftIdRequiredForPrintError(Exception):
+    def __init__(self, message: str = "shift_id is required for shift print view"):
+        self.message = message
+        super().__init__(message)
+
 __all__ = [
     "CardNotFoundError",
     "CardNotAvailableError",
@@ -133,4 +163,10 @@ __all__ = [
     "SubscriptionNotActiveError",
     "SubscriberAlreadyHasActiveSubscriptionError",
     "SubscriptionDailyLimitReachedError",
+    "ShiftAlreadyClosedError",
+    "PricingRuleNotFoundError",
+    "RateLabelAlreadyExistsError",
+    "InvalidDateRangeError",
+    "InvalidReportTypeError",
+    "ShiftIdRequiredForPrintError",
 ]

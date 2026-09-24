@@ -21,6 +21,13 @@ class PricingRuleRepository:
         )
         return result.scalars().first()
 
+    async def get_by_label(self, label: str) -> PricingRule | None:
+        """Fetches a pricing rule by its label."""
+        result = await self.db.execute(
+            select(PricingRule).where(PricingRule.label == label).limit(1)
+        )
+        return result.scalars().first()
+
     async def get_all(
         self, page: int = 1, size: int = 20
     ) -> tuple[list[PricingRule], int]:

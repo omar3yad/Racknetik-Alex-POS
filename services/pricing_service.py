@@ -6,7 +6,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.pricing_rule import PricingRule
-from services.exceptions import NoPricingRuleError
+from repositories.rate_repo import PricingRuleRepository
+from schemas.pricing_rule import PricingRuleCreate
+from services.audit_service import AuditService
+from services.exceptions import NoPricingRuleError, RateLabelAlreadyExistsError
 from services.pricing_calculation import PriceCalculation
 
 class PricingService:
@@ -103,5 +106,49 @@ class PricingService:
             entry_time = entry_time.replace(tzinfo=None)
         mock_session = SimpleNamespace(entry_time=entry_time)
         return self.calculate(mock_session, rule, datetime.utcnow())
+
+    async def create_rule(
+        self,
+        data: PricingRuleCreate,
+        admin_id: int,
+        rate_repo: PricingRuleRepository,
+        audit_service: AuditService,
+    ) -> PricingRule:
+        """Creates a new pricing rule with uniqueness check and audit logging."""
+        existing = await rate_repo.get_by_label(data.label)
+        if existing:
+            raise RateLabelAlreadyExistsError(f"Pricing rule with label '{data.label}' already exists")
+
+        effective_from = data.effective_from or datetime.utcnow()
+        rule = await rate_repo.create(
+            label=data.label,
+            rate_per_hour=data.rate_per_hour,
+            minimum_charge=data.minimum_charge,
+            grace_period_mins=data.grace_period_mins,
+            lost_card_penalty=data.lost_card_penalty,
+            effective_from=effective_from,
+            effective_until=data.effective_until,
+            created_by=admin_id,
+            is_active=False,
+        )
+        await self.db.commit()
+        await self.db.refresh(rule)
+
+        await audit_service.log(
+            actor_id=admin_id,
+            action="RATE_CREATED",
+            entity_type="pricing_rule",
+            entity_id=rule.id,
+            after={
+                "label": rule.label,
+                "rate_per_hour": rule.rate_per_hour,
+                "minimum_charge": rule.minimum_charge,
+                "grace_period_mins": rule.grace_period_mins,
+                "lost_card_penalty": rule.lost_card_penalty,
+                "effective_from": rule.effective_from.isoformat() if rule.effective_from else None,
+            },
+        )
+        return rule
+
 
 __all__ = ["PricingService"]

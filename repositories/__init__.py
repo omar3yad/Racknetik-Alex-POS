@@ -7,6 +7,8 @@ from repositories.shift_repo import ShiftRepository
 from repositories.subscription_plan_repo import SubscriptionPlanRepository
 from repositories.subscriber_repo import SubscriberRepository
 from repositories.subscription_repo import SubscriptionRepository
+from repositories.report_repo import ReportRepository
+from repositories.admin_shift_repo import AdminShiftRepository
 
 __all__ = [
     "UserRepository",
@@ -18,4 +20,6 @@ __all__ = [
     "SubscriptionPlanRepository",
     "SubscriberRepository",
     "SubscriptionRepository",
+    "ReportRepository",
+    "AdminShiftRepository",
 ]

@@ -181,13 +181,157 @@
   public names from `utils/time.py` and `utils/csv_export.py`. Rebuild `__all__`.
 
 ---
+## Group 3 — Pydantic Schemas
 
-ؤ
+- [x] **Task 3.1:** Create `schemas/admin_reports.py`. Define the following
+  Pydantic models. All use `model_config = ConfigDict(from_attributes=False)`
+  unless noted. No SQLAlchemy imports:
+
+```python
+  class LiveStatsResponse(BaseModel):
+      active_sessions: int
+      total_capacity: int
+      occupancy_pct: int
+      revenue_today_piastres: int
+      open_shifts: int
+```
+
+```python
+  class GateStatusResponse(BaseModel):
+      gate_number: int
+      operator_name: str | None
+      operator_id: int | None
+      shift_start: datetime | None
+      active_sessions: int
+```
+
+- [x] **Task 3.2:** In `schemas/admin_reports.py`, add:
+
+```python
+  class RevenueSummaryResponse(BaseModel):
+      total_sessions: int
+      total_revenue_piastres: int
+      avg_duration_minutes: int
+      avg_revenue_piastres: int
+```
+
+```python
+  class GateRevenueResponse(BaseModel):
+      gate_number: int
+      session_count: int
+      total_piastres: int
+```
+
+```python
+  class OperatorRevenueResponse(BaseModel):
+      operator_id: int
+      operator_name: str
+      session_count: int
+      total_piastres: int
+```
+
+```python
+  class DailyRevenueResponse(BaseModel):
+      date_str: str  # "YYYY-MM-DD" Cairo local
+      session_count: int
+      total_piastres: int
+```
+
+- [x] **Task 3.3:** In `schemas/admin_reports.py`, add:
+
+```python
+  class ReportFilters(BaseModel):
+      start_date: date | None = None
+      end_date: date | None = None
+      gate_number: int | None = Field(None, ge=1, le=5)
+      operator_id: int | None = None
+      status: SessionStatus | None = None
+      card_code: str | None = Field(None, max_length=50)
+      plate_number: str | None = Field(None, max_length=30)
+      long_stay: bool = False
+
+      @model_validator(mode="after")
+      def validate_date_range(self) -> "ReportFilters":
+          if self.start_date and self.end_date:
+              if self.start_date > self.end_date:
+                  raise ValueError("start_date must be <= end_date")
+          return self
+```
+
+  Import `SessionStatus` from `models`. Import `date` from `datetime`.
+
+- [x] **Task 3.4:** In `schemas/admin_reports.py`, add:
+
+```python
+  class ShiftFilters(BaseModel):
+      operator_id: int | None = None
+      gate_number: int | None = Field(None, ge=1, le=5)
+      status: Literal["open", "closed"] | None = None
+      start_date: date | None = None
+      end_date: date | None = None
+      overdue: bool = False
+
+      @model_validator(mode="after")
+      def validate_date_range(self) -> "ShiftFilters":
+          if self.start_date and self.end_date:
+              if self.start_date > self.end_date:
+                  raise ValueError("start_date must be <= end_date")
+          return self
+```
+
+```python
+  class ForceCloseShiftRequest(BaseModel):
+      closing_cash_egp: int | None = Field(None, ge=0)
+      admin_note: str | None = Field(None, max_length=500)
+```
+
+- [x] **Task 3.5:** In `schemas/admin_reports.py`, add:
+
+```python
+  class AdminSessionDetail(BaseModel):
+      model_config = ConfigDict(from_attributes=True)
+      # All fields from SessionResponse (import and re-use)
+      id: int
+      card_id: int
+      card_code: str
+      status: SessionStatus
+      gate_number: int
+      shift_id: int
+      operator_id: int
+      entry_time: datetime
+      exit_time: datetime | None
+      plate_number: str | None
+      duration_minutes: int | None
+      pricing_rule_id: int | None
+      amount_charged: int | None
+      is_lost_card: bool
+      lost_card_penalty_applied: int | None
+      payment_method: PaymentMethod
+      is_paid: bool
+      exit_operator_id: int | None
+      exit_shift_id: int | None
+      receipt_printed_at: datetime | None
+      admin_override_by: int | None
+      admin_override_note: str | None
+      notes: str | None
+      created_at: datetime
+      audit_logs: list[AuditLogResponse] = []
+```
+
+  Import `AuditLogResponse` from `schemas.audit_log`, `PaymentMethod` from
+  `models`.
+
+- [x] **Task 3.6:** In `schemas/admin_reports.py`, add `__all__` listing all
+  eight schemas. Update `schemas/__init__.py` to import and re-export all
+  names from `schemas/admin_reports.py`. Rebuild `schemas/__init__.py` `__all__`.
+
+---
+
 ## Group 4 — Repositories
 
 ### 4a — Report Repository
 
-- [ ] **Task 4.1:** Create `repositories/report_repo.py`. Define a
+- [x] **Task 4.1:** Create `repositories/report_repo.py`. Define a
   `ReportRepository` class with `__init__(self, db: AsyncSession)`. Add method:
 ```python
   async def count_active_sessions(self) -> int
@@ -195,14 +339,14 @@
   Executes: `SELECT COUNT(*) FROM parking_sessions WHERE status = 'ACTIVE'`.
   Returns integer. Uses `scalar_one_or_none()` with fallback to `0`.
 
-- [ ] **Task 4.2:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.2:** In `repositories/report_repo.py`, add method:
 ```python
   async def count_total_card_capacity(self) -> int
 ```
   Executes: `SELECT COUNT(*) FROM parking_cards WHERE status != 'damaged'`.
   Returns integer with fallback to `0`.
 
-- [ ] **Task 4.3:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.3:** In `repositories/report_repo.py`, add method:
 ```python
   async def sum_revenue_today(
       self, start_utc: datetime, end_utc: datetime
@@ -218,14 +362,14 @@
 ```
   Returns integer piastres.
 
-- [ ] **Task 4.4:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.4:** In `repositories/report_repo.py`, add method:
 ```python
   async def count_open_shifts(self) -> int
 ```
   Executes: `SELECT COUNT(*) FROM shifts WHERE ended_at IS NULL`.
   Returns integer.
 
-- [ ] **Task 4.5:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.5:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_gate_panel(self) -> list[dict]
 ```
@@ -237,7 +381,7 @@
       u.id AS operator_id,
       s.started_at AS shift_start,
       COUNT(ps.id) FILTER (WHERE ps.status = 'ACTIVE') AS active_sessions
-  FROM shifts s
+FROM shifts s
   JOIN users u ON s.operator_id = u.id
   LEFT JOIN parking_sessions ps ON ps.shift_id = s.id
   WHERE s.ended_at IS NULL
@@ -254,7 +398,7 @@
   `SUM(CASE WHEN ps.status = 'ACTIVE' THEN 1 ELSE 0 END)`.
   Detect dialect via `db.bind.dialect.name` and use the appropriate expression.
 
-- [ ] **Task 4.6:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.6:** In `repositories/report_repo.py`, add method:
 ```python
   async def count_long_stay_sessions(
       self, threshold_utc: datetime
@@ -267,7 +411,7 @@
 ```
   Returns integer.
 
-- [ ] **Task 4.7:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.7:** In `repositories/report_repo.py`, add method:
 ```python
   async def count_overdue_shifts(self, threshold_utc: datetime) -> int
 ```
@@ -278,7 +422,7 @@
 ```
   Returns integer.
 
-- [ ] **Task 4.8:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.8:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_revenue_summary(
       self,
@@ -295,7 +439,7 @@
   when each is not `None`. Returns dict with keys: `total_sessions`,
   `total_revenue`, `total_duration`. Uses `text()` with named bind params.
 
-- [ ] **Task 4.9:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.9:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_revenue_by_gate(
       self,
@@ -320,7 +464,7 @@
   Returns list of dicts with keys: `gate_number`, `session_count`,
   `total_piastres`.
 
-- [ ] **Task 4.10:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.10:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_revenue_by_operator(
       self,
@@ -333,7 +477,7 @@
   `operator_id`, `users.full_name`. Returns list of dicts: `operator_id`,
   `operator_name`, `session_count`, `total_piastres`.
 
-- [ ] **Task 4.11:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.11:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_daily_revenue_raw(
       self,
@@ -379,7 +523,7 @@
   Returns list of dicts: `cairo_date` (string `"YYYY-MM-DD"`),
   `session_count`, `total_piastres`.
 
-- [ ] **Task 4.12:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.12:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_sessions_filtered(
       self,
@@ -404,7 +548,7 @@
   Returns `(sessions, total_count)`. Uses two queries: one for rows
   (with LIMIT/OFFSET), one for total COUNT with the same filters.
 
-- [ ] **Task 4.13:** In `repositories/report_repo.py`, add method:
+- [x] **Task 4.13:** In `repositories/report_repo.py`, add method:
 ```python
   async def get_sessions_for_export(
       self,
@@ -417,7 +561,7 @@
   `await asyncio.sleep(0)` to yield control. No full result set is loaded into
   memory. Implemented as an `async def` with `yield`.
 
-- [ ] **Task 4.14:** In `repositories/report_repo.py`, add a private static
+- [x] **Task 4.14:** In `repositories/report_repo.py`, add a private static
   method:
 ```python
   @staticmethod
@@ -429,7 +573,7 @@
 
 ### 4b — Admin Shift Repository
 
-- [ ] **Task 4.15:** Create `repositories/admin_shift_repo.py`. Define an
+- [x] **Task 4.15:** Create `repositories/admin_shift_repo.py`. Define an
   `AdminShiftRepository` class with `__init__(self, db: AsyncSession)`. Add
   method:
 ```python
@@ -451,7 +595,7 @@
     utcnow() - timedelta(hours=12)`.
   Returns `(shifts, total_count)` ordered by `started_at DESC`.
 
-- [ ] **Task 4.16:** In `repositories/admin_shift_repo.py`, add method:
+- [x] **Task 4.16:** In `repositories/admin_shift_repo.py`, add method:
 ```python
   async def get_shift_session_totals(
       self, shift_ids: list[int]
@@ -467,7 +611,7 @@
 ```
   Returns `dict[shift_id, total_piastres]`. Missing shift IDs default to `0`.
 
-- [ ] **Task 4.17:** In `repositories/admin_shift_repo.py`, add method:
+- [x] **Task 4.17:** In `repositories/admin_shift_repo.py`, add method:
 ```python
   async def get_shift_session_counts(
       self, shift_id: int
@@ -484,7 +628,7 @@
 
 ### 4c — Repositories `__init__.py`
 
-- [ ] **Task 4.18:** Update `repositories/__init__.py` to import and re-export
+- [x] **Task 4.18:** Update `repositories/__init__.py` to import and re-export
   `ReportRepository` and `AdminShiftRepository`. Rebuild `__all__`.
 
 ---
