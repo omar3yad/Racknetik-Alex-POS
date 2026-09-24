@@ -5,7 +5,6 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
-
 from config import get_settings
 from database import engine
 from utils.jinja import create_jinja2_environment

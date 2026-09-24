@@ -1,5 +1,4 @@
 from datetime import date, datetime, time, timedelta, timezone
-from typing import Any
 import asyncio
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,7 +30,9 @@ logger = logging.getLogger(__name__)
 class ReportService:
     def __init__(self, db: AsyncSession, report_repo: ReportRepository | None = None):
         self.db = db
-        self.report_repo = report_repo if report_repo is not None else ReportRepository(db)
+        self.report_repo = (
+            report_repo if report_repo is not None else ReportRepository(db)
+        )
 
     async def get_live_stats(self) -> LiveStatsResponse:
         """Fetches live dashboard KPIs concurrently with graceful fallback."""
@@ -39,7 +40,9 @@ class ReportService:
         results = await asyncio.gather(
             self.report_repo.count_active_sessions(),
             self.report_repo.count_total_card_capacity(),
-            self.report_repo.sum_revenue_today(cairo_today_start(), cairo_date_to_utc_end(cairo_now().date())),
+            self.report_repo.sum_revenue_today(
+                cairo_today_start(), cairo_date_to_utc_end(cairo_now().date())
+            ),
             self.report_repo.count_open_shifts(),
             self.report_repo.count_long_stay_sessions(now_dt - timedelta(hours=24)),
             return_exceptions=True,
@@ -47,11 +50,11 @@ class ReportService:
 
         clean_results: list[int] = []
         for r in results:
-            if isinstance(r, Exception):
+            if isinstance(r, BaseException):
                 logger.error(f"Error fetching live stats metric: {r}")
                 clean_results.append(0)
             else:
-                clean_results.append(int(r or 0))
+                clean_results.append(int(r) if r else 0)
 
         active, capacity, revenue_today, open_shifts, _ = clean_results
         occupancy_pct = round(active * 100 / max(capacity, 1))
@@ -103,17 +106,23 @@ class ReportService:
             return_exceptions=True,
         )
 
-        long_stay = 0 if isinstance(results[0], Exception) else int(results[0] or 0)
-        overdue_shifts = 0 if isinstance(results[1], Exception) else int(results[1] or 0)
+        r0 = results[0]
+        r1 = results[1]
+        long_stay = 0 if isinstance(r0, BaseException) else int(r0 or 0)
+        overdue_shifts = 0 if isinstance(r1, BaseException) else int(r1 or 0)
 
         return {
             "long_stay": long_stay,
             "overdue_shifts": overdue_shifts,
         }
 
-    async def get_revenue_summary(self, filters: ReportFilters) -> RevenueSummaryResponse:
+    async def get_revenue_summary(
+        self, filters: ReportFilters
+    ) -> RevenueSummaryResponse:
         """Aggregates revenue, session count, and averages over filtered period."""
-        start_utc = cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        start_utc = (
+            cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        )
         end_utc = cairo_date_to_utc_end(filters.end_date) if filters.end_date else None
 
         res = await self.report_repo.get_revenue_summary(
@@ -137,9 +146,13 @@ class ReportService:
             avg_revenue_piastres=avg_revenue,
         )
 
-    async def get_revenue_by_gate(self, filters: ReportFilters) -> list[GateRevenueResponse]:
+    async def get_revenue_by_gate(
+        self, filters: ReportFilters
+    ) -> list[GateRevenueResponse]:
         """Returns revenue breakdown per gate."""
-        start_utc = cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        start_utc = (
+            cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        )
         end_utc = cairo_date_to_utc_end(filters.end_date) if filters.end_date else None
 
         rows = await self.report_repo.get_revenue_by_gate(
@@ -149,9 +162,13 @@ class ReportService:
         )
         return [GateRevenueResponse(**r) for r in rows]
 
-    async def get_revenue_by_operator(self, filters: ReportFilters) -> list[OperatorRevenueResponse]:
+    async def get_revenue_by_operator(
+        self, filters: ReportFilters
+    ) -> list[OperatorRevenueResponse]:
         """Returns revenue breakdown per operator."""
-        start_utc = cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        start_utc = (
+            cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        )
         end_utc = cairo_date_to_utc_end(filters.end_date) if filters.end_date else None
 
         rows = await self.report_repo.get_revenue_by_operator(
@@ -161,8 +178,12 @@ class ReportService:
         )
         return [OperatorRevenueResponse(**r) for r in rows]
 
-    async def get_daily_revenue(self, filters: ReportFilters) -> list[DailyRevenueResponse]:
-        """Returns daily revenue breakdown across date range, zero-filling missing calendar days."""
+    async def get_daily_revenue(
+        self, filters: ReportFilters
+    ) -> list[DailyRevenueResponse]:
+        """Returns daily revenue breakdown across date range, zero-filling
+        missing calendar days.
+        """
         today_cairo = cairo_now().date()
         start_d = filters.start_date or today_cairo
         end_d = filters.end_date or today_cairo
@@ -218,12 +239,16 @@ class ReportService:
         plan_id: int | None,
         subscription_repo: SubscriptionRepository,
     ) -> SubscriptionRevenueSummary:
-        """Computes aggregated subscription financial metrics over a Cairo date range."""
+        """Computes aggregated subscription financial metrics over a Cairo
+        date range.
+        """
         start_utc: datetime | None = None
         end_utc: datetime | None = None
 
         if start_date is not None:
-            cairo_start = datetime.combine(start_date, time.min).replace(tzinfo=CAIRO_TZ)
+            cairo_start = datetime.combine(start_date, time.min).replace(
+                tzinfo=CAIRO_TZ
+            )
             start_utc = cairo_start.astimezone(timezone.utc).replace(tzinfo=None)
 
         if end_date is not None:
@@ -245,7 +270,9 @@ class ReportService:
         total_subscriptions = sum(p.subscription_count for p in by_plan)
         total_revenue_piastres = sum(p.total_piastres for p in by_plan)
         avg_revenue_piastres = (
-            total_revenue_piastres // max(total_subscriptions, 1) if total_subscriptions > 0 else 0
+            total_revenue_piastres // max(total_subscriptions, 1)
+            if total_subscriptions > 0
+            else 0
         )
 
         return SubscriptionRevenueSummary(

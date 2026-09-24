@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Any
 
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +19,9 @@ class AdminShiftRepository:
         page: int,
         size: int,
     ) -> tuple[list[Shift], int]:
-        """Returns paginated shifts matching filters and total count ordered by started_at DESC."""
+        """Returns paginated shifts matching filters and total count
+        ordered by started_at DESC.
+        """
         conditions = []
         if filters.operator_id is not None:
             conditions.append(Shift.operator_id == filters.operator_id)
@@ -31,9 +32,13 @@ class AdminShiftRepository:
         elif filters.status == "closed":
             conditions.append(Shift.ended_at.isnot(None))
         if filters.start_date is not None:
-            conditions.append(Shift.started_at >= cairo_date_to_utc_start(filters.start_date))
+            conditions.append(
+                Shift.started_at >= cairo_date_to_utc_start(filters.start_date)
+            )
         if filters.end_date is not None:
-            conditions.append(Shift.started_at < cairo_date_to_utc_end(filters.end_date))
+            conditions.append(
+                Shift.started_at < cairo_date_to_utc_end(filters.end_date)
+            )
         if filters.overdue:
             threshold = datetime.utcnow() - timedelta(hours=12)
             conditions.append(Shift.ended_at.is_(None))
@@ -47,7 +52,11 @@ class AdminShiftRepository:
         data_q = select(Shift)
         if conditions:
             data_q = data_q.where(and_(*conditions))
-        data_q = data_q.order_by(Shift.started_at.desc()).offset((page - 1) * size).limit(size)
+        data_q = (
+            data_q.order_by(Shift.started_at.desc())
+            .offset((page - 1) * size)
+            .limit(size)
+        )
         shifts = list((await self.db.execute(data_q)).scalars().all())
         return shifts, total_count
 
@@ -55,7 +64,9 @@ class AdminShiftRepository:
         self,
         shift_ids: list[int],
     ) -> dict[int, int]:
-        """Calculates total revenue (in piastres) for COMPLETED and LOST_CARD sessions of given shifts."""
+        """Calculates total revenue (in piastres) for COMPLETED and
+        LOST_CARD sessions of given shifts.
+        """
         if not shift_ids:
             return {}
 
@@ -67,7 +78,9 @@ class AdminShiftRepository:
             )
             .where(
                 ParkingSession.shift_id.in_(shift_ids),
-                ParkingSession.status.in_([SessionStatus.COMPLETED, SessionStatus.LOST_CARD]),
+                ParkingSession.status.in_(
+                    [SessionStatus.COMPLETED, SessionStatus.LOST_CARD]
+                ),
             )
             .group_by(ParkingSession.shift_id)
         )

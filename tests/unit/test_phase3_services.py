@@ -7,7 +7,6 @@ from models.pricing_rule import PricingRule
 from schemas.admin_reports import ReportFilters
 from schemas.pricing_rule import PricingRuleCreate
 from services.exceptions import (
-    ShiftNotFoundError,
     ShiftAlreadyClosedError,
     RateLabelAlreadyExistsError,
 )
@@ -102,7 +101,11 @@ async def test_force_close_shift() -> None:
 
     mock_db.execute = AsyncMock(
         return_value=MagicMock(
-            scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=shift), all=MagicMock(return_value=[])))
+            scalars=MagicMock(
+                return_value=MagicMock(
+                    first=MagicMock(return_value=shift), all=MagicMock(return_value=[])
+                )
+            )
         )
     )
 
@@ -115,6 +118,7 @@ async def test_force_close_shift() -> None:
         admin_note="إغلاق إداري من المدير",
     )
 
+    assert summary is not None
     assert shift.ended_at is not None
     assert shift.closing_cash_egp == 7500
     assert shift.admin_override_note == "إغلاق إداري من المدير"
@@ -137,7 +141,9 @@ async def test_force_close_shift_already_closed() -> None:
 
     mock_db.execute = AsyncMock(
         return_value=MagicMock(
-            scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=shift)))
+            scalars=MagicMock(
+                return_value=MagicMock(first=MagicMock(return_value=shift))
+            )
         )
     )
 

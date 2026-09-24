@@ -2,7 +2,7 @@ import pytest
 from datetime import date, datetime
 from typing import Any
 
-from schemas.admin_reports import ReportFilters, RevenueSummaryResponse
+from schemas.admin_reports import ReportFilters
 from services.report_service import ReportService
 
 
@@ -88,6 +88,25 @@ class MockReportRepo:
         operator_id: int | None = None,
     ) -> list[dict[str, Any]]:
         return self.daily_revenue_raw
+
+    async def get_revenue_by_gate(self, start_utc, end_utc, operator_id=None):
+        return [
+            {"gate_number": 1, "session_count": 10, "total_piastres": 5000},
+            {"gate_number": 2, "session_count": 5, "total_piastres": 2500},
+        ]
+
+    async def get_revenue_by_operator(self, start_utc, end_utc, gate_number=None):
+        return [
+            {
+                "operator_id": 1,
+                "operator_name": "Op 1",
+                "session_count": 8,
+                "total_piastres": 4000,
+            },
+        ]
+
+    async def get_sessions_filtered(self, filters, page, size):
+        return ([], 0)
 
 
 @pytest.mark.asyncio
@@ -229,3 +248,62 @@ async def test_get_alert_counts_both_succeed():
     alerts = await service.get_alert_counts()
 
     assert alerts == {"long_stay": 2, "overdue_shifts": 1}
+
+
+@pytest.mark.asyncio
+async def test_get_revenue_by_gate():
+    repo = MockReportRepo()
+    service = ReportService(db=None, report_repo=repo)
+    filters = ReportFilters(start_date=date(2024, 8, 1), end_date=date(2024, 8, 31))
+    gates = await service.get_revenue_by_gate(filters)
+    assert len(gates) == 2
+    assert gates[0].gate_number == 1
+    assert gates[0].total_piastres == 5000
+
+
+@pytest.mark.asyncio
+async def test_get_revenue_by_operator():
+    repo = MockReportRepo()
+    service = ReportService(db=None, report_repo=repo)
+    filters = ReportFilters(start_date=date(2024, 8, 1), end_date=date(2024, 8, 31))
+    ops = await service.get_revenue_by_operator(filters)
+    assert len(ops) == 1
+    assert ops[0].operator_id == 1
+    assert ops[0].total_piastres == 4000
+
+
+@pytest.mark.asyncio
+async def test_get_sessions_filtered():
+    repo = MockReportRepo()
+    service = ReportService(db=None, report_repo=repo)
+    filters = ReportFilters()
+    sessions, total = await service.get_sessions_filtered(filters, 1, 20)
+    assert sessions == []
+    assert total == 0
+
+
+@pytest.mark.asyncio
+async def test_get_subscription_revenue_summary():
+    class MockSubRepo:
+        async def get_revenue_by_plan(self, start_utc, end_utc, plan_id):
+            return [
+                {
+                    "plan_id": 1,
+                    "plan_label": "Monthly Plan",
+                    "subscription_count": 4,
+                    "total_piastres": 20000,
+                }
+            ]
+
+    repo = MockReportRepo()
+    service = ReportService(db=None, report_repo=repo)
+    sub_summary = await service.get_subscription_revenue_summary(
+        start_date=date(2024, 8, 1),
+        end_date=date(2024, 8, 31),
+        plan_id=1,
+        subscription_repo=MockSubRepo(),
+    )
+    assert sub_summary.total_subscriptions == 4
+    assert sub_summary.total_revenue_piastres == 20000
+    assert sub_summary.avg_revenue_piastres == 5000
+    assert len(sub_summary.by_plan) == 1

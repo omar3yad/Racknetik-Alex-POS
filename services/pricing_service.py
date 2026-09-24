@@ -148,6 +148,7 @@ class PricingService:
                 "effective_from": rule.effective_from.isoformat() if rule.effective_from else None,
             },
         )
+        await self.db.commit()
         return rule
 
 

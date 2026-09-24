@@ -200,6 +200,7 @@ class ShiftService:
                     "admin_note": admin_note,
                 },
             )
+            await self.db.commit()
         except Exception as e:
             logger.error(f"Failed to log audit for force_close_shift {shift_id}: {e}")
 

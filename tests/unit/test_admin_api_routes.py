@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,7 +10,9 @@ from models.parking_card import ParkingCard, CardStatus
 from services.auth_service import AuthService
 
 
-async def setup_admin(db: AsyncSession, auth_service: AuthService, client: AsyncClient) -> User:
+async def setup_admin(
+    db: AsyncSession, auth_service: AuthService, client: AsyncClient
+) -> User:
     admin = User(
         username="admin_api_test",
         full_name="Admin API Tester",
@@ -27,7 +29,9 @@ async def setup_admin(db: AsyncSession, auth_service: AuthService, client: Async
     return admin
 
 
-async def setup_operator(db: AsyncSession, auth_service: AuthService, client: AsyncClient) -> User:
+async def setup_operator(
+    db: AsyncSession, auth_service: AuthService, client: AsyncClient
+) -> User:
     op = User(
         username="operator_api_test",
         full_name="Operator API Tester",
@@ -46,7 +50,9 @@ async def setup_operator(db: AsyncSession, auth_service: AuthService, client: As
 
 
 @pytest.mark.asyncio
-async def test_admin_api_require_admin(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_admin_api_require_admin(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     # 1. No token -> 401
     res = await async_client.get("/api/v1/admin/stats/live")
     assert res.status_code == 401
@@ -59,7 +65,9 @@ async def test_admin_api_require_admin(async_client: AsyncClient, db_session: As
 
 
 @pytest.mark.asyncio
-async def test_stats_live_and_gates(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_stats_live_and_gates(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
 
     # Live stats
@@ -81,11 +89,15 @@ async def test_stats_live_and_gates(async_client: AsyncClient, db_session: Async
 
 
 @pytest.mark.asyncio
-async def test_sessions_list_and_date_validation(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_sessions_list_and_date_validation(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
 
     # Invalid date range (start > end) -> 422
-    res_invalid = await async_client.get("/api/v1/admin/sessions?start_date=2026-09-25&end_date=2026-09-20")
+    res_invalid = await async_client.get(
+        "/api/v1/admin/sessions?start_date=2026-09-25&end_date=2026-09-20"
+    )
     assert res_invalid.status_code == 422
     assert res_invalid.json()["code"] == "INVALID_DATE_RANGE"
 
@@ -100,7 +112,9 @@ async def test_sessions_list_and_date_validation(async_client: AsyncClient, db_s
 
 
 @pytest.mark.asyncio
-async def test_session_detail_and_404(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_session_detail_and_404(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     admin = await setup_admin(db_session, auth_service, async_client)
 
     # 404 for non-existent session
@@ -147,7 +161,9 @@ async def test_session_detail_and_404(async_client: AsyncClient, db_session: Asy
 
 
 @pytest.mark.asyncio
-async def test_shifts_list_detail_and_force_close(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_shifts_list_detail_and_force_close(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     admin = await setup_admin(db_session, auth_service, async_client)
 
     shift = Shift(
@@ -194,7 +210,9 @@ async def test_shifts_list_detail_and_force_close(async_client: AsyncClient, db_
 
 
 @pytest.mark.asyncio
-async def test_reports_revenue_and_csv_exports(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_reports_revenue_and_csv_exports(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     admin = await setup_admin(db_session, auth_service, async_client)
 
     # 1. Revenue report
@@ -231,7 +249,9 @@ async def test_reports_revenue_and_csv_exports(async_client: AsyncClient, db_ses
     await db_session.commit()
     await db_session.refresh(shift)
 
-    res_shift_csv = await async_client.get(f"/api/v1/admin/shifts/{shift.id}/export/csv")
+    res_shift_csv = await async_client.get(
+        f"/api/v1/admin/shifts/{shift.id}/export/csv"
+    )
     assert res_shift_csv.status_code == 200
     assert "text/csv" in res_shift_csv.headers["content-type"]
     assert f"pgms_shift_{shift.id}_" in res_shift_csv.headers["content-disposition"]

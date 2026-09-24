@@ -1,7 +1,7 @@
 from datetime import date, datetime
 import pytest
 from pydantic import ValidationError
-from models import SessionStatus, PaymentMethod
+from models import SessionStatus
 from schemas.admin_reports import (
     LiveStatsResponse,
     GateStatusResponse,
@@ -85,7 +85,9 @@ def test_report_filters_date_range_validation() -> None:
 
 def test_shift_filters_date_range_validation() -> None:
     # Valid
-    f = ShiftFilters(start_date=date(2024, 8, 1), end_date=date(2024, 8, 15), status="open")
+    f = ShiftFilters(
+        start_date=date(2024, 8, 1), end_date=date(2024, 8, 15), status="open"
+    )
     assert f.status == "open"
 
     # Inverted date range

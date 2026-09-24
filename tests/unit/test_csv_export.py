@@ -1,10 +1,13 @@
 import pytest
 from datetime import datetime
 from types import SimpleNamespace
-from typing import AsyncIterator
 
 from models.parking_session import SessionStatus, PaymentMethod
-from utils.csv_export import _piastres_to_egp_str, generate_sessions_csv
+from utils.csv_export import (
+    _piastres_to_egp_str,
+    generate_sessions_csv,
+    generate_shifts_csv,
+)
 
 
 def test_piastres_to_egp_str():
@@ -90,3 +93,31 @@ async def test_none_values_render_as_empty_string():
     assert "CARD-NULL-TEST" in data_row
     assert "None" not in data_row
     assert "null" not in data_row
+
+
+@pytest.mark.asyncio
+async def test_shifts_csv_export():
+    shift = SimpleNamespace(
+        id=10,
+        operator_id=2,
+        gate_number=1,
+        started_at=datetime(2024, 8, 15, 8, 0),
+        ended_at=datetime(2024, 8, 15, 16, 0),
+        session_count=5,
+        closing_cash_egp=5000,
+    )
+    generator = generate_shifts_csv(
+        async_iter([shift]),
+        operator_names={2: "Ahmed Operator"},
+        session_totals={10: 4500},
+    )
+    chunks = [chunk async for chunk in generator]
+    assert len(chunks) == 3
+    assert chunks[0] == "\ufeff"
+    assert "رقم الشيفت" in chunks[1]
+    assert "الإجمالي المحسوب (جنيه)" in chunks[1]
+    # Data row
+    assert "Ahmed Operator" in chunks[2]
+    assert "45.00" in chunks[2]
+    assert "50.00" in chunks[2]
+    assert "5.00" in chunks[2]

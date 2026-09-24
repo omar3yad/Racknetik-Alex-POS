@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime, date, timezone
+from datetime import datetime, date
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -12,7 +12,9 @@ CAIRO_TZ = ZoneInfo("Africa/Cairo")
 
 # Load translations
 _translations = {}
-_trans_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "translations", "ar.json")
+_trans_path = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "translations", "ar.json"
+)
 if os.path.exists(_trans_path):
     with open(_trans_path, "r", encoding="utf-8") as f:
         _translations = json.load(f)
@@ -99,7 +101,9 @@ def duration_ar_filter(duration_minutes: int | float | None) -> str:
 
 
 def days_remaining_filter(val: date | datetime | int | None) -> int:
-    """Calculate remaining days until end_date relative to Cairo today, or pass-through if int."""
+    """Calculate remaining days until end_date relative to Cairo today,
+    or pass-through if int.
+    """
     if val is None:
         return 0
     if isinstance(val, int):
@@ -176,10 +180,16 @@ def register_jinja_filters(templates: Jinja2Templates) -> None:
     templates.env.filters["days_remaining"] = days_remaining_filter
     templates.env.filters["to_arabic_indic"] = to_arabic_indic
     templates.env.filters["zfill"] = zfill_filter
-    templates.env.filters["subscription_status_class"] = subscription_status_class_filter
-    templates.env.filters["subscription_status_badge"] = subscription_status_badge_filter
+    templates.env.filters["subscription_status_class"] = (
+        subscription_status_class_filter
+    )
+    templates.env.filters["subscription_status_badge"] = (
+        subscription_status_badge_filter
+    )
     templates.env.filters["subscription_status_ar"] = subscription_status_ar_filter
-    templates.env.filters["subscription_status_label"] = subscription_status_label_filter
+    templates.env.filters["subscription_status_label"] = (
+        subscription_status_label_filter
+    )
     templates.env.filters["discrepancy_class"] = discrepancy_class_filter
     templates.env.filters["session_status_label"] = session_status_label_filter
     templates.env.filters["shift_status_label"] = shift_status_label_filter

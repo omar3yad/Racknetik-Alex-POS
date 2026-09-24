@@ -5,13 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.user import User, UserRole
 from models.shift import Shift
-from models.parking_session import ParkingSession, SessionStatus, PaymentMethod
+from models.parking_session import ParkingSession, SessionStatus
 from models.parking_card import ParkingCard, CardStatus
 from models.pricing_rule import PricingRule
 from services.auth_service import AuthService
 
 
-async def setup_admin(db: AsyncSession, auth_service: AuthService, client: AsyncClient) -> User:
+async def setup_admin(
+    db: AsyncSession, auth_service: AuthService, client: AsyncClient
+) -> User:
     admin = User(
         username="admin_ui_test",
         full_name="Admin UI Tester",
@@ -28,7 +30,9 @@ async def setup_admin(db: AsyncSession, auth_service: AuthService, client: Async
     return admin
 
 
-async def setup_operator(db: AsyncSession, auth_service: AuthService, client: AsyncClient) -> User:
+async def setup_operator(
+    db: AsyncSession, auth_service: AuthService, client: AsyncClient
+) -> User:
     op = User(
         username="operator_ui_test",
         full_name="Operator UI Tester",
@@ -47,7 +51,9 @@ async def setup_operator(db: AsyncSession, auth_service: AuthService, client: As
 
 
 @pytest.mark.asyncio
-async def test_dashboard_requires_admin(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_dashboard_requires_admin(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     # GET as operator -> 303 redirect to /ui/login?next=/ui/admin/dashboard
     await setup_operator(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/dashboard", follow_redirects=False)
@@ -56,7 +62,9 @@ async def test_dashboard_requires_admin(async_client: AsyncClient, db_session: A
 
 
 @pytest.mark.asyncio
-async def test_dashboard_renders_as_admin(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_dashboard_renders_as_admin(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/dashboard")
     assert res.status_code == 200
@@ -64,7 +72,9 @@ async def test_dashboard_renders_as_admin(async_client: AsyncClient, db_session:
 
 
 @pytest.mark.asyncio
-async def test_shifts_page_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_shifts_page_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/shifts")
     assert res.status_code == 200
@@ -72,7 +82,9 @@ async def test_shifts_page_renders(async_client: AsyncClient, db_session: AsyncS
 
 
 @pytest.mark.asyncio
-async def test_sessions_page_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_sessions_page_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/sessions")
     assert res.status_code == 200
@@ -80,7 +92,9 @@ async def test_sessions_page_renders(async_client: AsyncClient, db_session: Asyn
 
 
 @pytest.mark.asyncio
-async def test_revenue_report_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_revenue_report_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/reports/revenue")
     assert res.status_code == 200
@@ -88,21 +102,27 @@ async def test_revenue_report_renders(async_client: AsyncClient, db_session: Asy
 
 
 @pytest.mark.asyncio
-async def test_print_view_shift_missing_shift_id(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_print_view_shift_missing_shift_id(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/reports/print?report_type=shift")
     assert res.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_print_view_invalid_report_type(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_print_view_invalid_report_type(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/reports/print?report_type=unknown")
     assert res.status_code == 422
 
 
 @pytest.mark.asyncio
-async def test_print_view_sessions_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_print_view_sessions_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     admin = await setup_admin(db_session, auth_service, async_client)
 
     card1 = ParkingCard(card_code="PRINT_SESS_1", status=CardStatus.IN_USE)
@@ -139,7 +159,9 @@ async def test_print_view_sessions_renders(async_client: AsyncClient, db_session
 
 
 @pytest.mark.asyncio
-async def test_print_view_shift_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_print_view_shift_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     admin = await setup_admin(db_session, auth_service, async_client)
 
     shift = Shift(
@@ -152,14 +174,18 @@ async def test_print_view_shift_renders(async_client: AsyncClient, db_session: A
     await db_session.commit()
     await db_session.refresh(shift)
 
-    res = await async_client.get(f"/ui/admin/reports/print?report_type=shift&shift_id={shift.id}")
+    res = await async_client.get(
+        f"/ui/admin/reports/print?report_type=shift&shift_id={shift.id}"
+    )
     assert res.status_code == 200
     assert "window.print()" in res.text
     assert f"#{shift.id}" in res.text or "تقرير إغلاق الشيفت" in res.text
 
 
 @pytest.mark.asyncio
-async def test_rates_page_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_rates_page_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
 
     rule = PricingRule(
@@ -182,7 +208,9 @@ async def test_rates_page_renders(async_client: AsyncClient, db_session: AsyncSe
 
 
 @pytest.mark.asyncio
-async def test_operators_page_renders(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_operators_page_renders(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     await setup_admin(db_session, auth_service, async_client)
     res = await async_client.get("/ui/admin/operators")
     assert res.status_code == 200
@@ -190,7 +218,9 @@ async def test_operators_page_renders(async_client: AsyncClient, db_session: Asy
 
 
 @pytest.mark.asyncio
-async def test_dashboard_long_stay_banner_shown(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
+async def test_dashboard_long_stay_banner_shown(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
     admin = await setup_admin(db_session, auth_service, async_client)
 
     card = ParkingCard(card_code="LONG_STAY_CARD", status=CardStatus.IN_USE)
@@ -216,8 +246,10 @@ async def test_dashboard_long_stay_banner_shown(async_client: AsyncClient, db_se
 
 
 @pytest.mark.asyncio
-async def test_dashboard_no_banner_when_no_long_stay(async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService):
-    admin = await setup_admin(db_session, auth_service, async_client)
+async def test_dashboard_no_banner_when_no_long_stay(
+    async_client: AsyncClient, db_session: AsyncSession, auth_service: AuthService
+):
+    await setup_admin(db_session, auth_service, async_client)
 
     # Make sure no active session > 24 hours exists
     res = await async_client.get("/ui/admin/dashboard")

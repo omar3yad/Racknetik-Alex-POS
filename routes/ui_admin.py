@@ -1,5 +1,5 @@
 import asyncio
-from datetime import date, datetime
+from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -11,7 +11,6 @@ from config import get_settings
 from database import get_db
 from models import (
     AuditLog,
-    ParkingSession,
     PricingRule,
     SessionStatus,
     Shift,
@@ -52,7 +51,8 @@ async def require_admin_ui(
 ) -> User:
     """Enforces admin authorization for UI routes.
 
-    Redirects unauthenticated or non-admin users to /ui/login?next={path} with status 303.
+    Redirects unauthenticated or non-admin users to
+    /ui/login?next={path} with status 303.
     """
     token = request.cookies.get("pgms_token")
     if not token:
@@ -170,10 +170,14 @@ async def admin_shifts_page(
     op_ids = list({s.operator_id for s in shifts})
     operator_names = {}
     if op_ids:
-        op_res = await db.execute(select(User.id, User.full_name).where(User.id.in_(op_ids)))
+        op_res = await db.execute(
+            select(User.id, User.full_name).where(User.id.in_(op_ids))
+        )
         operator_names = {row.id: row.full_name for row in op_res.fetchall()}
 
-    all_operators_res = await db.execute(select(User).where(User.role == UserRole.OPERATOR))
+    all_operators_res = await db.execute(
+        select(User).where(User.role == UserRole.OPERATOR)
+    )
     all_operators = all_operators_res.scalars().all()
 
     templates = request.app.state.templates
@@ -217,7 +221,9 @@ async def admin_shift_detail_page(
     summary = await shift_svc._compute_summary(shift, shift.closing_cash_egp)
 
     session_repo = ParkingSessionRepository(db)
-    sessions, total_sessions = await session_repo.get_by_shift(shift_id, page=page, size=size)
+    sessions, total_sessions = await session_repo.get_by_shift(
+        shift_id, page=page, size=size
+    )
 
     operator = await db.get(User, shift.operator_id)
 
@@ -280,10 +286,14 @@ async def admin_sessions_page(
     op_ids = list({s.operator_id for s in sessions if s.operator_id})
     operator_names = {}
     if op_ids:
-        op_res = await db.execute(select(User.id, User.full_name).where(User.id.in_(op_ids)))
+        op_res = await db.execute(
+            select(User.id, User.full_name).where(User.id.in_(op_ids))
+        )
         operator_names = {row.id: row.full_name for row in op_res.fetchall()}
 
-    all_operators_res = await db.execute(select(User).where(User.role == UserRole.OPERATOR))
+    all_operators_res = await db.execute(
+        select(User).where(User.role == UserRole.OPERATOR)
+    )
     all_operators = all_operators_res.scalars().all()
 
     templates = request.app.state.templates
@@ -331,8 +341,16 @@ async def admin_session_detail_page(
     audit_logs = logs_result.scalars().all()
 
     operator = await db.get(User, session.operator_id) if session.operator_id else None
-    exit_operator = await db.get(User, session.exit_operator_id) if session.exit_operator_id else None
-    pricing_rule = await db.get(PricingRule, session.pricing_rule_id) if session.pricing_rule_id else None
+    exit_operator = (
+        await db.get(User, session.exit_operator_id)
+        if session.exit_operator_id
+        else None
+    )
+    pricing_rule = (
+        await db.get(PricingRule, session.pricing_rule_id)
+        if session.pricing_rule_id
+        else None
+    )
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -387,7 +405,9 @@ async def admin_revenue_report_page(
         report_svc.get_daily_revenue(filters),
     )
 
-    all_operators_res = await db.execute(select(User).where(User.role == UserRole.OPERATOR))
+    all_operators_res = await db.execute(
+        select(User).where(User.role == UserRole.OPERATOR)
+    )
     all_operators = all_operators_res.scalars().all()
 
     templates = request.app.state.templates
@@ -451,11 +471,17 @@ async def admin_print_report_page(
     report_data = {}
 
     if report_type == "sessions":
-        sessions, total = await report_svc.get_sessions_filtered(filters, page=1, size=500)
+        sessions, total = await report_svc.get_sessions_filtered(
+            filters, page=1, size=500
+        )
         truncated = total > 500
         users_result = await db.execute(select(User.id, User.full_name))
         operator_names = {u.id: u.full_name for u in users_result.fetchall()}
-        report_data = {"sessions": sessions, "total": total, "operator_names": operator_names}
+        report_data = {
+            "sessions": sessions,
+            "total": total,
+            "operator_names": operator_names,
+        }
 
     elif report_type == "revenue":
         today = cairo_now().date()
@@ -553,20 +579,27 @@ async def admin_operators_page(
     operator_data = []
     for u in users:
         active_shift_res = await db.execute(
-            select(Shift).where(Shift.operator_id == u.id, Shift.ended_at.is_(None)).limit(1)
+            select(Shift)
+            .where(Shift.operator_id == u.id, Shift.ended_at.is_(None))
+            .limit(1)
         )
         active_shift = active_shift_res.scalars().first()
 
         last_shift_res = await db.execute(
-            select(Shift.started_at).where(Shift.operator_id == u.id).order_by(Shift.started_at.desc()).limit(1)
+            select(Shift.started_at)
+            .where(Shift.operator_id == u.id)
+            .order_by(Shift.started_at.desc())
+            .limit(1)
         )
         last_shift_date = last_shift_res.scalars().first()
 
-        operator_data.append({
-            "user": u,
-            "active_shift": active_shift,
-            "last_shift_date": last_shift_date,
-        })
+        operator_data.append(
+            {
+                "user": u,
+                "active_shift": active_shift,
+                "last_shift_date": last_shift_date,
+            }
+        )
 
     templates = request.app.state.templates
     return templates.TemplateResponse(

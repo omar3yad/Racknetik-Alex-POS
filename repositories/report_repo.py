@@ -20,22 +20,30 @@ class ReportRepository:
     async def count_active_sessions(self) -> int:
         """Counts parking sessions where status = 'ACTIVE'."""
         result = await self.db.execute(
-            select(func.count(ParkingSession.id)).where(ParkingSession.status == SessionStatus.ACTIVE)
+            select(func.count(ParkingSession.id)).where(
+                ParkingSession.status == SessionStatus.ACTIVE
+            )
         )
         return result.scalar_one_or_none() or 0
 
     async def count_total_card_capacity(self) -> int:
         """Counts cards where status != 'DAMAGED'."""
         result = await self.db.execute(
-            select(func.count(ParkingCard.id)).where(ParkingCard.status != CardStatus.DAMAGED)
+            select(func.count(ParkingCard.id)).where(
+                ParkingCard.status != CardStatus.DAMAGED
+            )
         )
         return result.scalar_one_or_none() or 0
 
     async def sum_revenue_today(self, start_utc: datetime, end_utc: datetime) -> int:
-        """Sums amount_charged for sessions COMPLETED or LOST_CARD exited within [start_utc, end_utc)."""
+        """Sums amount_charged for sessions COMPLETED or LOST_CARD exited within
+        [start_utc, end_utc).
+        """
         result = await self.db.execute(
             select(func.coalesce(func.sum(ParkingSession.amount_charged), 0)).where(
-                ParkingSession.status.in_([SessionStatus.COMPLETED, SessionStatus.LOST_CARD]),
+                ParkingSession.status.in_(
+                    [SessionStatus.COMPLETED, SessionStatus.LOST_CARD]
+                ),
                 ParkingSession.exit_time >= start_utc,
                 ParkingSession.exit_time < end_utc,
             )
@@ -77,7 +85,9 @@ class ReportRepository:
             {
                 "gate_number": int(r["gate_number"]),
                 "operator_name": r["operator_name"],
-                "operator_id": int(r["operator_id"]) if r["operator_id"] is not None else None,
+                "operator_id": (
+                    int(r["operator_id"]) if r["operator_id"] is not None else None
+                ),
                 "shift_start": r["shift_start"],
                 "active_sessions": int(r["active_sessions"] or 0),
             }
@@ -111,7 +121,9 @@ class ReportRepository:
         gate_number: int | None,
         operator_id: int | None,
     ) -> dict[str, int]:
-        """Returns total_sessions, total_revenue, total_duration for completed/lost sessions."""
+        """Returns total_sessions, total_revenue, total_duration for
+        completed/lost sessions.
+        """
         clauses = ["status IN ('COMPLETED', 'LOST_CARD')"]
         params: dict[str, Any] = {}
 
@@ -285,9 +297,13 @@ class ReportRepository:
     def _build_session_filter_conditions(self, filters: ReportFilters) -> list[Any]:
         conditions = []
         if filters.start_date:
-            conditions.append(ParkingSession.exit_time >= cairo_date_to_utc_start(filters.start_date))
+            conditions.append(
+                ParkingSession.exit_time >= cairo_date_to_utc_start(filters.start_date)
+            )
         if filters.end_date:
-            conditions.append(ParkingSession.exit_time < cairo_date_to_utc_end(filters.end_date))
+            conditions.append(
+                ParkingSession.exit_time < cairo_date_to_utc_end(filters.end_date)
+            )
         if filters.gate_number is not None:
             conditions.append(ParkingSession.gate_number == filters.gate_number)
         if filters.operator_id is not None:
@@ -326,7 +342,11 @@ class ReportRepository:
         data_q = select(ParkingSession)
         if conditions:
             data_q = data_q.where(and_(*conditions))
-        data_q = data_q.order_by(ParkingSession.entry_time.desc()).offset((page - 1) * size).limit(size)
+        data_q = (
+            data_q.order_by(ParkingSession.entry_time.desc())
+            .offset((page - 1) * size)
+            .limit(size)
+        )
         sessions = list((await self.db.execute(data_q)).scalars().all())
         return sessions, total_count
 
@@ -335,14 +355,20 @@ class ReportRepository:
         filters: ReportFilters,
         chunk_size: int = 500,
     ) -> AsyncIterator[ParkingSession]:
-        """Yields sessions matching filters in chunks without loading all into memory."""
+        """Yields sessions matching filters in chunks without loading all
+        into memory.
+        """
         conditions = self._build_session_filter_conditions(filters)
         offset = 0
         while True:
             data_q = select(ParkingSession)
             if conditions:
                 data_q = data_q.where(and_(*conditions))
-            data_q = data_q.order_by(ParkingSession.entry_time.desc()).offset(offset).limit(chunk_size)
+            data_q = (
+                data_q.order_by(ParkingSession.entry_time.desc())
+                .offset(offset)
+                .limit(chunk_size)
+            )
             chunk = list((await self.db.execute(data_q)).scalars().all())
             if not chunk:
                 break

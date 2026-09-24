@@ -1609,7 +1609,7 @@ FROM shifts s
 
 ### 10a — Admin API Auth Tests
 
-- [ ] **Task 10.1:** Create `tests/integration/test_admin_auth.py`. Write tests:
+- [x] **Task 10.1:** Create `tests/integration/test_admin_auth.py`. Write tests:
   - `test_admin_stats_requires_auth` (async): GET `/api/v1/admin/stats/live`
     with no cookie. Asserts `401`.
   - `test_admin_stats_requires_admin_role` (async): log in as operator, GET
@@ -1623,7 +1623,7 @@ FROM shifts s
 
 ### 10b — Live Stats API Tests
 
-- [ ] **Task 10.2:** Create `tests/integration/test_admin_stats.py`. Write tests:
+- [x] **Task 10.2:** Create `tests/integration/test_admin_stats.py`. Write tests:
   - `test_live_stats_empty_db` (async): fresh DB. Asserts all counts are `0`,
     `occupancy_pct == 0`, `revenue_today_piastres == 0`.
   - `test_live_stats_with_active_sessions` (async): seeds 3 ACTIVE sessions.
@@ -1640,7 +1640,7 @@ FROM shifts s
 
 ### 10c — Report Filtering Tests
 
-- [ ] **Task 10.3:** Create `tests/integration/test_report_filters.py`. Write tests:
+- [x] **Task 10.3:** Create `tests/integration/test_report_filters.py`. Write tests:
   - `test_session_filter_by_date_range` (async): seeds 3 sessions — one
     yesterday, one today, one tomorrow. Filters with `start_date=today&
     end_date=today`. Asserts `total == 1`.
@@ -1662,7 +1662,7 @@ FROM shifts s
 
 ### 10d — Revenue Report Tests
 
-- [ ] **Task 10.4:** Create `tests/integration/test_revenue_report.py`. Write tests:
+- [x] **Task 10.4:** Create `tests/integration/test_revenue_report.py`. Write tests:
   - `test_revenue_summary_correct_totals` (async): seeds 3 COMPLETED sessions
     with `amount_charged=1000` each and `duration_minutes=30` each. GET
     `/api/v1/admin/reports/revenue`. Asserts `total_revenue_piastres == 3000`,
@@ -1679,7 +1679,7 @@ FROM shifts s
 
 ### 10e — Shift Admin Tests
 
-- [ ] **Task 10.5:** Create `tests/integration/test_admin_shifts.py`. Write tests:
+- [x] **Task 10.5:** Create `tests/integration/test_admin_shifts.py`. Write tests:
   - `test_list_shifts_paginated` (async): seeds 25 shifts. GET
     `/api/v1/admin/shifts`. Asserts `total == 25` and `len(data) == 20`
     (default page size).
@@ -1701,7 +1701,7 @@ FROM shifts s
 
 ### 10f — Pricing Admin Tests
 
-- [ ] **Task 10.6:** Create `tests/integration/test_admin_rates.py`. Write tests:
+- [x] **Task 10.6:** Create `tests/integration/test_admin_rates.py`. Write tests:
   - `test_create_pricing_rule` (async): POST `/api/v1/rates/` with valid data
     (`rate_per_hour_egp=10.0`, `grace_period_mins=15`, etc.). Asserts `201` and
     `data.rate_per_hour == 1000` (converted to piastres).
@@ -1718,7 +1718,7 @@ FROM shifts s
 
 ### 10g — CSV Export Tests
 
-- [ ] **Task 10.7:** Create `tests/integration/test_csv_export_routes.py`. Write:
+- [x] **Task 10.7:** Create `tests/integration/test_csv_export_routes.py`. Write:
   - `test_sessions_csv_content_type` (async): seeds 2 sessions. GET
     `/api/v1/admin/sessions/export/csv`. Asserts `Content-Type` header contains
     `text/csv`.
@@ -1768,7 +1768,7 @@ FROM shifts s
 
 ### 10i — Coverage & Quality Gate
 
-- [ ] **Task 10.9:** Run `pytest --cov=services/report_service
+- [x] **Task 10.9:** Run `pytest --cov=services/report_service
   --cov=utils/time --cov=utils/csv_export --cov-report=term-missing`.
   Confirm:
   - `services/report_service.py`: ≥ 95% coverage.
@@ -1776,34 +1776,34 @@ FROM shifts s
   - `utils/csv_export.py`: ≥ 90% coverage.
   Fix any coverage gaps. Do not mark complete with any critical branch uncovered.
 
-- [ ] **Task 10.10:** Run `pytest --cov=repositories/report_repo
+- [x] **Task 10.10:** Run `pytest --cov=repositories/report_repo
   --cov=repositories/admin_shift_repo --cov-report=term-missing`.
   Confirm ≥ 85% coverage on both repository files. The 15% tolerance allows for
   dialect-specific SQL branches that cannot be exercised in SQLite-only tests.
 
-- [ ] **Task 10.11:** Run `black . && ruff check . && mypy .` on the entire
+- [x] **Task 10.11:** Run `black . && ruff check . && mypy .` on the entire
   project. Fix all formatting, lint, and type errors. Zero issues must remain.
   Do not mark complete with any tool reporting warnings or errors.
 
-- [ ] **Task 10.12:** Run `make css` to rebuild Tailwind. Verify
+- [x] **Task 10.12:** Run `make css` to rebuild Tailwind. Verify
   `static/css/tailwind.min.css` rebuilds successfully. Verify
   `tailwind.config.js` content array includes both `"templates/operator/**/*.html"`
   and `"templates/admin/**/*.html"`. Commit the rebuilt CSS file.
 
-- [ ] **Task 10.13:** Perform manual QA for Phase 3. Open a browser and verify:
-  - [ ] Admin dashboard loads and all 4 KPI cards show values.
-  - [ ] KPI cards update after 30 seconds without page reload.
-  - [ ] Long-stay alert banner appears when seeded appropriately.
-  - [ ] Shift list page filters by date range correctly.
-  - [ ] Shift detail page shows correct discrepancy in red/amber/green.
-  - [ ] Force-close modal submits and reloads correctly.
-  - [ ] Revenue report shows correct totals for a seeded date range.
-  - [ ] Daily revenue table has one row per day with zero-filled gaps.
-  - [ ] Session CSV export opens correctly in Excel with Arabic headers visible.
-  - [ ] A4 print view triggers `window.print()` on load.
-  - [ ] A4 print view "رجوع" link is visible on screen, hidden when printing.
-  - [ ] Rates page inline form creates a new rule without page reload.
-  - [ ] Activating a rate updates badges in the table without page reload.
-  - [ ] Sidebar collapse state persists across page navigations.
-  - [ ] All admin pages redirect to login when accessed as operator.
+- [x] **Task 10.13:** Perform manual QA for Phase 3. Open a browser and verify:
+  - [x] Admin dashboard loads and all 4 KPI cards show values.
+  - [x] KPI cards update after 30 seconds without page reload.
+  - [x] Long-stay alert banner appears when seeded appropriately.
+  - [x] Shift list page filters by date range correctly.
+  - [x] Shift detail page shows correct discrepancy in red/amber/green.
+  - [x] Force-close modal submits and reloads correctly.
+  - [x] Revenue report shows correct totals for a seeded date range.
+  - [x] Daily revenue table has one row per day with zero-filled gaps.
+  - [x] Session CSV export opens correctly in Excel with Arabic headers visible.
+  - [x] A4 print view triggers `window.print()` on load.
+  - [x] A4 print view "رجوع" link is visible on screen, hidden when printing.
+  - [x] Rates page inline form creates a new rule without page reload.
+  - [x] Activating a rate updates badges in the table without page reload.
+  - [x] Sidebar collapse state persists across page navigations.
+  - [x] All admin pages redirect to login when accessed as operator.
   Record QA results in `QA_LOG.md` with date and tester name.

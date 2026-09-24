@@ -2,7 +2,8 @@
 module.exports = {
   content: [
     "./templates/**/*.html",
-    "./templates/admin/**/*.html"
+    "./templates/operator/**/*.html",
+    "./templates/admin/**/*.html",
   ],
   theme: {
     extend: {},

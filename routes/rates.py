@@ -11,7 +11,7 @@ from schemas.pricing_rule import PricingRuleCreate, PricingRuleResponse
 from schemas.parking_session import PriceBreakdownResponse
 from services.pricing_service import PricingService
 from services.audit_service import AuditService
-from services.exceptions import NoPricingRuleError
+from services.exceptions import NoPricingRuleError, RateLabelAlreadyExistsError
 
 router = APIRouter(prefix="/api/v1/rates", tags=["rates"])
 
@@ -74,15 +74,22 @@ async def create_rate(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
     pricing_repo: PricingRuleRepository = Depends(get_pricing_repo),
+    pricing_service: PricingService = Depends(get_pricing_service),
 ):
-    # Map pydantic values to db attributes
-    rule_data = data.model_dump()
-    rule_data["created_by"] = current_user.id
-    rule_data["is_active"] = False
-
-    rule = await pricing_repo.create(**rule_data)
-    await db.commit()
-    await db.refresh(rule)
+    audit_service = AuditService(db)
+    try:
+        rule = await pricing_service.create_rule(
+            data=data,
+            admin_id=current_user.id,
+            rate_repo=pricing_repo,
+            audit_service=audit_service,
+        )
+    except RateLabelAlreadyExistsError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+            headers={"X-Error-Code": "RATE_LABEL_ALREADY_EXISTS"},
+        )
 
     return {"data": PricingRuleResponse.model_validate(rule).model_dump(mode="json")}
 
@@ -114,5 +121,6 @@ async def activate_rate(
         before=None,
         after={"id": rule.id, "label": rule.label},
     )
+    await db.commit()
 
     return {"data": PricingRuleResponse.model_validate(rule).model_dump(mode="json")}

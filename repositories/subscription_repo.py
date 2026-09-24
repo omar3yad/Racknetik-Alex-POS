@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Any
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -243,3 +244,45 @@ class SubscriptionRepository:
             setattr(subscription, key, value)
         await self.db.flush()
         return subscription
+
+    async def get_revenue_by_plan(
+        self,
+        start_utc: datetime | None,
+        end_utc: datetime | None,
+        plan_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        from models.subscription_plan import SubscriptionPlan
+
+        query = (
+            select(
+                Subscription.plan_id,
+                SubscriptionPlan.label.label("plan_label"),
+                func.count().label("subscription_count"),
+                func.coalesce(func.sum(Subscription.amount_paid_piastres), 0).label("total_piastres"),
+            )
+            .join(SubscriptionPlan, Subscription.plan_id == SubscriptionPlan.id)
+            .where(Subscription.status != SubscriptionStatus.CANCELLED)
+        )
+        if start_utc is not None:
+            query = query.where(Subscription.paid_at >= start_utc)
+        if end_utc is not None:
+            query = query.where(Subscription.paid_at < end_utc)
+        if plan_id is not None:
+            query = query.where(Subscription.plan_id == plan_id)
+
+        query = query.group_by(Subscription.plan_id, SubscriptionPlan.label).order_by(
+            func.coalesce(func.sum(Subscription.amount_paid_piastres), 0).desc()
+        )
+
+        result = await self.db.execute(query)
+        rows = result.all()
+        return [
+            {
+                "plan_id": r.plan_id,
+                "plan_label": r.plan_label,
+                "subscription_count": r.subscription_count,
+                "total_piastres": r.total_piastres,
+            }
+            for r in rows
+        ]
+

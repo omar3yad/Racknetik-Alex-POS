@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Literal
 import asyncio
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +12,6 @@ from dependencies import require_admin
 from models import (
     AuditLog,
     ParkingSession,
-    PaymentMethod,
     SessionStatus,
     Shift,
     User,
@@ -22,28 +21,18 @@ from repositories import (
     ParkingSessionRepository,
     ReportRepository,
     ShiftRepository,
-    SubscriptionPlanRepository,
     SubscriptionRepository,
-    UserRepository,
 )
 from schemas import (
     AdminSessionDetail,
     AuditLogResponse,
-    DailyRevenueResponse,
     ForceCloseShiftRequest,
-    GateRevenueResponse,
-    GateStatusResponse,
-    LiveStatsResponse,
-    OperatorRevenueResponse,
     PaginatedResponse,
     ReportFilters,
-    RevenueSummaryResponse,
     SessionResponse,
     ShiftFilters,
     ShiftResponse,
     ShiftSummaryResponse,
-    SubscriptionDashboardStats,
-    SubscriptionRevenueSummary,
 )
 from services import (
     AuditService,
@@ -373,7 +362,9 @@ async def get_shift_detail(
         "data": {
             "shift": ShiftResponse.model_validate(shift).model_dump(),
             "summary": ShiftSummaryResponse.model_validate(summary).model_dump(),
-            "sessions": [SessionResponse.model_validate(s).model_dump() for s in sessions],
+            "sessions": [
+                SessionResponse.model_validate(s).model_dump() for s in sessions
+            ],
             "session_total": session_total,
         }
     }

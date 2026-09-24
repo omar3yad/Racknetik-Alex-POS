@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.user import User, UserRole
@@ -113,7 +113,9 @@ async def test_report_and_shift_repos(db_session: AsyncSession) -> None:
     assert await report_repo.count_overdue_shifts(now - timedelta(hours=12)) == 0
 
     # Revenue today
-    rev = await report_repo.sum_revenue_today(now - timedelta(days=1), now + timedelta(days=1))
+    rev = await report_repo.sum_revenue_today(
+        now - timedelta(days=1), now + timedelta(days=1)
+    )
     assert rev == 3000
 
     # Gate panel
@@ -145,17 +147,23 @@ async def test_report_and_shift_repos(db_session: AsyncSession) -> None:
     assert op_rev[0]["operator_name"] == "عامل 1"
 
     # Daily revenue raw
-    daily = await report_repo.get_daily_revenue_raw(now - timedelta(days=2), now + timedelta(days=2), None, None)
+    daily = await report_repo.get_daily_revenue_raw(
+        now - timedelta(days=2), now + timedelta(days=2), None, None
+    )
     assert len(daily) >= 1
 
     # Sessions filtered
-    filtered, total = await report_repo.get_sessions_filtered(ReportFilters(), page=1, size=10)
+    filtered, total = await report_repo.get_sessions_filtered(
+        ReportFilters(), page=1, size=10
+    )
     assert total == 2
     assert len(filtered) == 2
 
     # Sessions export
     export_sessions = []
-    async for sess in report_repo.get_sessions_for_export(ReportFilters(), chunk_size=1):
+    async for sess in report_repo.get_sessions_for_export(
+        ReportFilters(), chunk_size=1
+    ):
         export_sessions.append(sess)
     assert len(export_sessions) == 2
 
@@ -163,7 +171,9 @@ async def test_report_and_shift_repos(db_session: AsyncSession) -> None:
     shift_repo = AdminShiftRepository(db_session)
 
     # Filtered shifts
-    shifts, s_count = await shift_repo.get_shifts_filtered(ShiftFilters(status="open"), page=1, size=10)
+    shifts, s_count = await shift_repo.get_shifts_filtered(
+        ShiftFilters(status="open"), page=1, size=10
+    )
     assert s_count == 1
     assert shifts[0].id == shift1.id
 

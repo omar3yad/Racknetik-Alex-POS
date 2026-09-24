@@ -11,7 +11,9 @@ def cairo_now() -> datetime:
 
 def cairo_today_start() -> datetime:
     """Returns the UTC datetime corresponding to midnight Cairo time today."""
-    return cairo_now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(hours=2)
+    return cairo_now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
+        hours=2
+    )
 
 
 def cairo_date_to_utc_start(d: date) -> datetime:
@@ -20,7 +22,9 @@ def cairo_date_to_utc_start(d: date) -> datetime:
 
 
 def cairo_date_to_utc_end(d: date) -> datetime:
-    """Returns the UTC datetime of Cairo midnight at the end of that date (start of next day)."""
+    """Returns the UTC datetime of Cairo midnight at the end of that date
+    (start of next day).
+    """
     return cairo_date_to_utc_start(d) + timedelta(days=1)
 
 
