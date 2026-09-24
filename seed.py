@@ -87,7 +87,7 @@ async def seed_default_pricing_rule(db, admin_user_id: int) -> dict:
         minimum_charge=0,
         grace_period_mins=15,
         is_active=True,
-        effective_from=datetime.now(timezone.utc),
+        effective_from=datetime.now(timezone.utc).replace(tzinfo=None),
         effective_until=None,
         created_by=admin_user_id,
     )

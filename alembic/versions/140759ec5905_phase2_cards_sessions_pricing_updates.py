@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -23,7 +24,7 @@ def upgrade() -> None:
     op.create_table('parking_cards',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('card_code', sa.String(length=50), nullable=False),
-    sa.Column('status', sa.Enum('AVAILABLE', 'IN_USE', 'LOST', 'DAMAGED', name='cardstatus'), server_default='available', nullable=False),
+    sa.Column('status', sa.Enum('AVAILABLE', 'IN_USE', 'LOST', 'DAMAGED', name='cardstatus'), server_default='AVAILABLE', nullable=False),
     sa.Column('last_seen_at', sa.DateTime(), nullable=True),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.Column('updated_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
@@ -32,14 +33,18 @@ def upgrade() -> None:
     op.create_index(op.f('ix_parking_cards_card_code'), 'parking_cards', ['card_code'], unique=True)
     
     # Drop the old indexes before altering the table
-    op.drop_index('idx_active_barcode', table_name='parking_sessions', sqlite_where=sa.text('exit_time IS NULL'))
+    op.drop_index('idx_active_barcode', table_name='parking_sessions', sqlite_where=sa.text('exit_time IS NULL'), postgresql_where=sa.text('exit_time IS NULL'))
     op.drop_index('ix_parking_sessions_card_barcode', table_name='parking_sessions')
     op.drop_index('ix_parking_sessions_ticket_number', table_name='parking_sessions')
     
+    # Create sessionstatus enum in PostgreSQL if needed
+    sessionstatus_enum = sa.Enum('ACTIVE', 'COMPLETED', 'LOST_CARD', name='sessionstatus')
+    sessionstatus_enum.create(op.get_bind(), checkfirst=True)
+
     with op.batch_alter_table('parking_sessions', schema=None) as batch_op:
         batch_op.add_column(sa.Column('card_id', sa.Integer(), nullable=False))
         batch_op.add_column(sa.Column('card_code', sa.String(length=50), nullable=False))
-        batch_op.add_column(sa.Column('status', sa.Enum('ACTIVE', 'COMPLETED', 'LOST_CARD', name='sessionstatus'), server_default='ACTIVE', nullable=False))
+        batch_op.add_column(sa.Column('status', sessionstatus_enum, server_default='ACTIVE', nullable=False))
         batch_op.add_column(sa.Column('is_lost_card', sa.Boolean(), server_default='0', nullable=False))
         batch_op.add_column(sa.Column('lost_card_penalty_applied', sa.Integer(), nullable=True))
         batch_op.add_column(sa.Column('admin_override_by', sa.Integer(), nullable=True))

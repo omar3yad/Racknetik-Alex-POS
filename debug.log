@@ -220,3 +220,14 @@
 [DEBUG] dashboard_page: found sessions=10, total=20
 [DEBUG] dashboard_page: current_user.id=2, shift=<models.shift.Shift object at 0x0000026A8CC19A70>
 [DEBUG] dashboard_page: found sessions=10, total=20
+[DEBUG] dashboard_page: current_user.id=8, shift=None
+[DEBUG] dashboard_page: current_user.id=13, shift=None
+[DEBUG] dashboard_page: current_user.id=13, shift=None
+[DEBUG] dashboard_page: current_user.id=13, shift=<models.shift.Shift object at 0x70f0ca9e5ee0>
+[DEBUG] dashboard_page: found sessions=0, total=0
+[DEBUG] dashboard_page: current_user.id=13, shift=<models.shift.Shift object at 0x70f0ca0873e0>
+[DEBUG] dashboard_page: found sessions=1, total=1
+[DEBUG] dashboard_page: current_user.id=13, shift=<models.shift.Shift object at 0x70f0ca87ea80>
+[DEBUG] dashboard_page: found sessions=1, total=1
+[DEBUG] dashboard_page: current_user.id=13, shift=<models.shift.Shift object at 0x70f0ca0b6b10>
+[DEBUG] dashboard_page: found sessions=1, total=1

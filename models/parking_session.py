@@ -41,6 +41,8 @@ class ParkingSession(Base, TimestampMixin):
     admin_override_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_deleted: Mapped[bool] = mapped_column(nullable=False, server_default="0")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subscription_id: Mapped[int | None] = mapped_column(ForeignKey("subscriptions.id"), nullable=True)
+    is_subscribed: Mapped[bool] = mapped_column(nullable=False, server_default="0")
 
     __table_args__ = (
         Index(

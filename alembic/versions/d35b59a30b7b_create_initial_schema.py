@@ -90,7 +90,7 @@ def upgrade() -> None:
     sa.Column('duration_minutes', sa.Integer(), nullable=True),
     sa.Column('pricing_rule_id', sa.Integer(), nullable=True),
     sa.Column('amount_charged', sa.Integer(), nullable=True),
-    sa.Column('payment_method', sa.Enum('CASH', name='paymentmethod'), server_default='cash', nullable=False),
+    sa.Column('payment_method', sa.Enum('CASH', name='paymentmethod'), server_default='CASH', nullable=False),
     sa.Column('is_paid', sa.Boolean(), server_default='0', nullable=False),
     sa.Column('exit_operator_id', sa.Integer(), nullable=True),
     sa.Column('exit_shift_id', sa.Integer(), nullable=True),
