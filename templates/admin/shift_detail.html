@@ -1,0 +1,252 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}تفاصيل الشيفت #{{ shift.id | to_arabic_indic }} — PGMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Navigation & Actions -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <a href="/ui/admin/shifts" class="text-sm text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1">
+        <span>←</span>
+        <span>العودة إلى الشيفتات</span>
+      </a>
+      <h1 class="text-xl font-bold text-white">تفاصيل الشيفت #{{ shift.id | to_arabic_indic }}</h1>
+    </div>
+
+    <div class="flex items-center gap-3 flex-wrap">
+      <a href="/api/v1/admin/shifts/{{ shift.id }}/export/csv" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-sm transition flex items-center gap-2">
+        <span>📥</span>
+        <span>{{ t("admin.export.csv_button") }}</span>
+      </a>
+      <a href="/ui/admin/reports/print?report_type=shift&shift_id={{ shift.id }}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-3 py-1.5 rounded-lg text-sm transition flex items-center gap-2">
+        <span>🖨️</span>
+        <span>{{ t("admin.print.button") }}</span>
+      </a>
+      {% if shift.ended_at is none %}
+      <button id="open-force-close-btn" class="bg-red-600 hover:bg-red-500 text-white font-medium px-4 py-1.5 rounded-lg text-sm transition shadow flex items-center gap-2">
+        <span>⚠️</span>
+        <span>{{ t("admin.shifts.force_close") }}</span>
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Header Card (Shift Info) -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-sm">
+      <div>
+        <span class="block text-xs text-gray-400">العامل المسؤول</span>
+        <span class="font-bold text-white mt-1 block">{{ operator.full_name if operator else "—" }}</span>
+      </div>
+      <div>
+        <span class="block text-xs text-gray-400">البوابة</span>
+        <span class="font-bold text-white mt-1 block">بوابة {{ shift.gate_number | to_arabic_indic }}</span>
+      </div>
+      <div>
+        <span class="block text-xs text-gray-400">وقت البداية</span>
+        <span class="font-medium text-gray-200 mt-1 block">{{ shift.started_at | format_datetime }}</span>
+      </div>
+      <div>
+        <span class="block text-xs text-gray-400">وقت النهاية</span>
+        <span class="font-medium text-gray-200 mt-1 block">
+          {{ shift.ended_at | format_datetime if shift.ended_at else "مفتوح" }}
+        </span>
+      </div>
+      <div>
+        <span class="block text-xs text-gray-400">الحالة</span>
+        <span class="inline-flex mt-1 items-center px-2 py-0.5 rounded text-xs font-medium {{ 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50' if not shift.ended_at else 'bg-gray-700 text-gray-300' }}">
+          {{ shift.ended_at | shift_status_label }}
+        </span>
+      </div>
+    </div>
+    {% if shift.admin_override_note %}
+    <div class="mt-4 pt-3 border-t border-gray-700/60 text-xs text-amber-300">
+      <span class="font-bold">ملاحظة الإغلاق الإداري:</span> {{ shift.admin_override_note }}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Financial Summary Card -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
+    <h2 class="text-base font-bold text-white mb-4">الملخص المالي والإحصائي</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 text-center">
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">إجمالي الجلسات</p>
+        <p class="text-lg font-bold text-white mt-1">{{ summary.total_sessions | to_arabic_indic }}</p>
+      </div>
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">جلسات مكتملة</p>
+        <p class="text-lg font-bold text-emerald-400 mt-1">{{ summary.completed_sessions | to_arabic_indic }}</p>
+      </div>
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">كروت مفقودة</p>
+        <p class="text-lg font-bold text-red-400 mt-1">{{ summary.lost_card_sessions | to_arabic_indic }}</p>
+      </div>
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">جلسات نشطة</p>
+        <p class="text-lg font-bold text-cyan-400 mt-1">{{ summary.active_sessions | to_arabic_indic }}</p>
+      </div>
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">الإيراد المحسوب</p>
+        <p class="text-lg font-bold text-emerald-400 mt-1">{{ summary.computed_total_piastres | format_egp }}</p>
+      </div>
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">النقدية عند الإغلاق</p>
+        <p class="text-lg font-bold text-white mt-1">{{ summary.closing_cash_piastres | format_egp if summary.closing_cash_piastres is not none else "—" }}</p>
+      </div>
+      <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/40">
+        <p class="text-xs text-gray-400">الفارق</p>
+        <p class="text-lg font-bold mt-1 {{ summary.discrepancy_piastres | discrepancy_class(summary.computed_total_piastres) }}">
+          {{ summary.discrepancy_piastres | format_egp if summary.discrepancy_piastres is not none else "—" }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions List Table -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+      <h2 class="font-bold text-white text-base">جلسات الشيفت</h2>
+      <span class="text-xs text-gray-400">إجمالي الجلسات: {{ total_sessions | to_arabic_indic }}</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">رقم الجلسة</th>
+            <th class="p-3">كود الكرت</th>
+            <th class="p-3">رقم اللوحة</th>
+            <th class="p-3">وقت الدخول</th>
+            <th class="p-3">وقت الخروج</th>
+            <th class="p-3">المدة</th>
+            <th class="p-3">المبلغ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700/60">
+          {% for s in sessions %}
+          <tr onclick="window.location.href='/ui/admin/sessions/{{ s.id }}'" class="cursor-pointer hover:bg-gray-700/40 transition">
+            <td class="p-3 font-mono text-white">#{{ s.id | zfill(8) | to_arabic_indic }}</td>
+            <td class="p-3 font-mono text-indigo-300">{{ s.card_code }}</td>
+            <td class="p-3 text-gray-200">{{ s.plate_number or "—" }}</td>
+            <td class="p-3 text-gray-400 text-xs">{{ s.entry_time | format_datetime }}</td>
+            <td class="p-3 text-gray-400 text-xs">{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
+            <td class="p-3 text-gray-300">{{ s.duration_minutes | format_duration if s.duration_minutes is not none else "—" }}</td>
+            <td class="p-3 font-semibold text-emerald-400">{{ s.amount_charged | format_egp if s.amount_charged is not none else "—" }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="p-6 text-center text-gray-400">لا توجد جلسات مسجلة لهذا الشيفت</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sessions Pagination -->
+    {% if total_sessions > size %}
+    {% set total_pages = ((total_sessions - 1) // size) + 1 %}
+    <div class="p-4 border-t border-gray-700 flex items-center justify-between text-sm">
+      <div>
+        {% if page > 1 %}
+        <a href="/ui/admin/shifts/{{ shift.id }}?page={{ page - 1 }}&size={{ size }}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition">السابق</a>
+        {% endif %}
+      </div>
+      <div class="text-gray-400">
+        صفحة {{ page | to_arabic_indic }} من {{ total_pages | to_arabic_indic }}
+      </div>
+      <div>
+        {% if page < total_pages %}
+        <a href="/ui/admin/shifts/{{ shift.id }}?page={{ page + 1 }}&size={{ size }}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition">التالي</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Force Close HTML5 Dialog Modal -->
+{% if shift.ended_at is none %}
+<dialog id="force-close-modal" class="bg-gray-900 border border-gray-700 text-white rounded-2xl p-6 max-w-md w-full backdrop:bg-black/70 shadow-2xl">
+  <div class="space-y-4">
+    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+      <h3 class="text-lg font-bold text-red-400 flex items-center gap-2">
+        <span>⚠️</span>
+        <span>{{ t("admin.shifts.force_close") }}</span>
+      </h3>
+      <button id="close-modal-btn" type="button" class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+    </div>
+    <p class="text-sm text-gray-300">{{ t("admin.shifts.force_close_confirm") }}</p>
+
+    <div id="modal-error" class="hidden bg-red-950/80 border border-red-500 text-red-200 text-xs p-3 rounded-lg"></div>
+
+    <form id="force-close-form" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">النقدية عند الإغلاق (ج.م) - اختياري</label>
+        <input type="number" step="0.01" min="0" id="closing-cash-input" placeholder="0.00" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">سبب الإغلاق الإداري / ملاحظات</label>
+        <textarea id="admin-note-input" rows="3" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500" placeholder="أدخل سبب إغلاق الشيفت إدارياً..."></textarea>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" id="cancel-modal-btn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-sm transition">إلغاء</button>
+        <button type="submit" id="submit-force-close-btn" class="bg-red-600 hover:bg-red-500 text-white font-bold px-5 py-2 rounded-lg text-sm transition">تأكيد الإغلاق</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if shift.ended_at is none %}
+<script>
+  const dialog = document.getElementById('force-close-modal');
+  const openBtn = document.getElementById('open-force-close-btn');
+  const closeBtn = document.getElementById('close-modal-btn');
+  const cancelBtn = document.getElementById('cancel-modal-btn');
+  const form = document.getElementById('force-close-form');
+  const errDiv = document.getElementById('modal-error');
+
+  if (openBtn && dialog) {
+    openBtn.addEventListener('click', () => dialog.showModal());
+    closeBtn.addEventListener('click', () => dialog.close());
+    cancelBtn.addEventListener('click', () => dialog.close());
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errDiv.classList.add('hidden');
+      const cashVal = document.getElementById('closing-cash-input').value;
+      const noteVal = document.getElementById('admin-note-input').value;
+
+      let closingCashPiastres = null;
+      if (cashVal !== "" && !isNaN(cashVal)) {
+        closingCashPiastres = Math.round(parseFloat(cashVal) * 100);
+      }
+
+      try {
+        const res = await fetch('/api/v1/admin/shifts/{{ shift.id }}/force-close', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            closing_cash_egp: closingCashPiastres,
+            admin_note: noteVal || null
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || 'فشل إغلاق الشيفت');
+        }
+
+        window.location.reload();
+      } catch (err) {
+        errDiv.textContent = err.message;
+        errDiv.classList.remove('hidden');
+      }
+    });
+  }
+</script>
+{% endif %}
+{% endblock %}

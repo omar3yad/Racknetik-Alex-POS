@@ -1114,14 +1114,14 @@ FROM shifts s
 
 ### 8a — Admin UI Router
 
-- [ ] **Task 8.1:** Create `routes/ui_admin.py`. Define `router = APIRouter(
+- [x] **Task 8.1:** Create `routes/ui_admin.py`. Define `router = APIRouter(
   prefix="/ui/admin", tags=["ui-admin"])`. All routes use
   `Depends(require_admin)`. Add a module-level dependency override: unauthenticated
   or non-admin access redirects to `/ui/login?next={request.url.path}` with
   status `303`. Implement this via a shared `require_admin_ui` dependency that
   catches `HTTPException(403)` and issues the redirect instead of returning JSON.
 
-- [ ] **Task 8.2:** In `routes/ui_admin.py`, add `GET /dashboard` endpoint:
+- [x] **Task 8.2:** In `routes/ui_admin.py`, add `GET /dashboard` endpoint:
   - Calls `report_service.get_live_stats()` and `report_service.get_gate_panel()`
     concurrently via `asyncio.gather`.
   - Calls `report_service.get_alert_counts()`.
@@ -1130,7 +1130,7 @@ FROM shifts s
     "long_stay_count": alerts["long_stay"],
     "overdue_shift_count": alerts["overdue_shifts"]})`.
 
-- [ ] **Task 8.3:** In `routes/ui_admin.py`, add `GET /shifts` endpoint:
+- [x] **Task 8.3:** In `routes/ui_admin.py`, add `GET /shifts` endpoint:
   - Parses `ShiftFilters` from query params using `get_shift_filters` dependency.
   - Pagination: `page`, `size` (default 20).
   - Calls `AdminShiftRepository.get_shifts_filtered(filters, page, size)`.
@@ -1138,33 +1138,33 @@ FROM shifts s
   - Fetches session totals via `get_shift_session_totals(shift_ids)`.
   - Returns `TemplateResponse("admin/shifts.html", {...})`.
 
-- [ ] **Task 8.4:** In `routes/ui_admin.py`, add `GET /shifts/{shift_id}`
+- [x] **Task 8.4:** In `routes/ui_admin.py`, add `GET /shifts/{shift_id}`
   endpoint:
   - Fetches shift. Raises redirect to `/ui/admin/shifts` if not found.
   - Computes summary via `ShiftService._compute_summary(...)`.
   - Fetches paginated sessions (page 1, size 10).
   - Returns `TemplateResponse("admin/shift_detail.html", {...})`.
 
-- [ ] **Task 8.5:** In `routes/ui_admin.py`, add `GET /sessions` endpoint:
+- [x] **Task 8.5:** In `routes/ui_admin.py`, add `GET /sessions` endpoint:
   - Parses `ReportFilters` from query params.
   - Calls `report_service.get_sessions_filtered(filters, page, size)`.
   - Fetches operator names for all returned sessions.
   - Returns `TemplateResponse("admin/sessions.html", {...})`.
 
-- [ ] **Task 8.6:** In `routes/ui_admin.py`, add `GET /sessions/{session_id}`
+- [x] **Task 8.6:** In `routes/ui_admin.py`, add `GET /sessions/{session_id}`
   endpoint:
   - Fetches session and audit logs (same logic as API Task 7.4).
   - Fetches operator name, exit operator name, pricing rule label.
   - Returns `TemplateResponse("admin/session_detail.html", {...})`.
 
-- [ ] **Task 8.7:** In `routes/ui_admin.py`, add `GET /reports/revenue` endpoint:
+- [x] **Task 8.7:** In `routes/ui_admin.py`, add `GET /reports/revenue` endpoint:
   - Parses `ReportFilters`. Defaults `start_date` and `end_date` to today if
     absent.
   - Calls all four report service methods (as in API Task 7.10).
   - Fetches all operators and gates for the filter dropdowns.
   - Returns `TemplateResponse("admin/reports/revenue.html", {...})`.
 
-- [ ] **Task 8.8:** In `routes/ui_admin.py`, add `GET /reports/print` endpoint:
+- [x] **Task 8.8:** In `routes/ui_admin.py`, add `GET /reports/print` endpoint:
   - Query params: `report_type: str`, `shift_id: int | None = None`, plus all
     filter params.
   - Validates `report_type` is one of `"revenue"`, `"sessions"`, `"shift"`.
@@ -1179,26 +1179,26 @@ FROM shifts s
     "generated_at": cairo_now(), "garage_name": settings.APP_NAME,
     "truncated": truncated})`. This route renders a standalone template.
 
-- [ ] **Task 8.9:** In `routes/ui_admin.py`, add `GET /rates` endpoint:
+- [x] **Task 8.9:** In `routes/ui_admin.py`, add `GET /rates` endpoint:
   - Fetches all pricing rules ordered by `created_at DESC` via
     `PricingRuleRepository.get_all(page=1, size=100)`.
   - Returns `TemplateResponse("admin/rates.html", {"request": request,
     "user": current_user, "rules": rules})`.
 
-- [ ] **Task 8.10:** In `routes/ui_admin.py`, add `GET /operators` endpoint:
+- [x] **Task 8.10:** In `routes/ui_admin.py`, add `GET /operators` endpoint:
   - Fetches all users via `UserRepository.get_all(page=1, size=200)`.
   - For each operator, fetches their active shift status via a single
     `get_active_shift` batch query (or one query per operator — note the
     10-operator scale makes N+1 acceptable here).
   - Returns `TemplateResponse("admin/operators.html", {...})`.
 
-- [ ] **Task 8.11:** Register `ui_admin.router` in `main.py`. Import as
+- [x] **Task 8.11:** Register `ui_admin.router` in `main.py`. Import as
   `ui_admin_router`. Add `app.include_router(ui_admin_router)`. No other
   changes.
 
 ### 8b — Admin Base Template
 
-- [ ] **Task 8.12:** Create `templates/admin/base_admin.html`. This file does
+- [x] **Task 8.12:** Create `templates/admin/base_admin.html`. This file does
   **NOT** extend any other template. Complete structure:
 ```html
   <!DOCTYPE html>
@@ -1255,7 +1255,7 @@ FROM shifts s
 
 ### 8c — Admin Dashboard Template
 
-- [ ] **Task 8.13:** Create `templates/admin/dashboard.html` extending
+- [x] **Task 8.13:** Create `templates/admin/dashboard.html` extending
   `templates/admin/base_admin.html`. Must include:
   - If `long_stay_count > 0`: amber alert banner with count and link to
     `/ui/admin/sessions?status=ACTIVE&long_stay=true`.
@@ -1275,7 +1275,7 @@ FROM shifts s
 
 ### 8d — Shift List Template
 
-- [ ] **Task 8.14:** Create `templates/admin/shifts.html` extending
+- [x] **Task 8.14:** Create `templates/admin/shifts.html` extending
   `base_admin.html`. Must include:
   - Filter bar: `<form method="GET">` with inputs for `start_date`, `end_date`
     (`type="date"`), `gate_number` (dropdown 1–5 + "الكل"), `operator_id`
@@ -1293,7 +1293,7 @@ FROM shifts s
 
 ### 8e — Shift Detail Template
 
-- [ ] **Task 8.15:** Create `templates/admin/shift_detail.html` extending
+- [x] **Task 8.15:** Create `templates/admin/shift_detail.html` extending
   `base_admin.html`. Must include:
   - Header card: operator name, gate, start time (`format_datetime`), end time
     or "مفتوح", duration.
@@ -1312,7 +1312,7 @@ FROM shifts s
 
 ### 8f — Session List Template
 
-- [ ] **Task 8.16:** Create `templates/admin/sessions.html` extending
+- [x] **Task 8.16:** Create `templates/admin/sessions.html` extending
   `base_admin.html`. Must include:
   - Filter bar with: `start_date`, `end_date`, `gate_number`, `operator_id`,
     `status` (dropdown with all three status options), `card_code` text input,
@@ -1328,7 +1328,7 @@ FROM shifts s
 
 ### 8g — Session Detail Template
 
-- [ ] **Task 8.17:** Create `templates/admin/session_detail.html` extending
+- [x] **Task 8.17:** Create `templates/admin/session_detail.html` extending
   `base_admin.html`. Must include:
   - Two-column detail card: all session fields rendered in a `<dl>` definition
     list. Monetary fields via `format_egp`. Datetime fields via `format_datetime`.
@@ -1340,7 +1340,7 @@ FROM shifts s
 
 ### 8h — Revenue Report Template
 
-- [ ] **Task 8.18:** Create `templates/admin/reports/revenue.html` extending
+- [x] **Task 8.18:** Create `templates/admin/reports/revenue.html` extending
   `base_admin.html`. Must include:
   - Filter bar (same structure as sessions, without `status`, `card_code`,
     `plate_number`, `long_stay`). Default `start_date` and `end_date` to today
@@ -1355,7 +1355,7 @@ FROM shifts s
 
 ### 8i — Rates Management Template
 
-- [ ] **Task 8.19:** Create `templates/admin/rates.html` extending
+- [x] **Task 8.19:** Create `templates/admin/rates.html` extending
   `base_admin.html`. Must include:
   - "إنشاء تعريفة جديدة" button that shows/hides an inline `<div>` form via
     a toggle. The form uses `fetch` to POST to `/api/v1/rates/` with JSON body.
@@ -1374,7 +1374,7 @@ FROM shifts s
 
 ### 8j — Operators Template
 
-- [ ] **Task 8.20:** Create `templates/admin/operators.html` extending
+- [x] **Task 8.20:** Create `templates/admin/operators.html` extending
   `base_admin.html`. Must include:
   - Table: full name, username, gate, is_active badge, current shift status,
     last shift date (or "لا يوجد").
@@ -1388,7 +1388,7 @@ FROM shifts s
 
 ### 8k — A4 Print Template
 
-- [ ] **Task 8.21:** Create `templates/admin/reports/print.html`. This is a
+- [x] **Task 8.21:** Create `templates/admin/reports/print.html`. This is a
   **standalone** HTML file — does NOT extend any base template. Structure:
 ```html
   <!DOCTYPE html>
@@ -1431,22 +1431,22 @@ FROM shifts s
   The main print template uses `{% if report_type == "sessions" %}{% include
   "admin/reports/_print_sessions.html" %}{% endif %}` etc.
 
-- [ ] **Task 8.22:** Create `templates/admin/reports/_print_sessions.html`
+- [x] **Task 8.22:** Create `templates/admin/reports/_print_sessions.html`
   (partial, no extends). Renders a full `<table>` of session rows using the
   same columns as the session list page. All monetary values via `format_egp`.
   All datetimes via `format_datetime`. No pagination — all rows are rendered.
 
-- [ ] **Task 8.23:** Create `templates/admin/reports/_print_revenue.html`
+- [x] **Task 8.23:** Create `templates/admin/reports/_print_revenue.html`
   (partial). Renders: summary card as a `<table>`, then "by gate" table, then
   "by operator" table, then "daily" table. All on one scrollable/printable page.
 
-- [ ] **Task 8.24:** Create `templates/admin/reports/_print_shift.html`
+- [x] **Task 8.24:** Create `templates/admin/reports/_print_shift.html`
   (partial). Renders the shift header, financial summary, and full sessions
   table for the selected shift.
 
 ### 8l — Tailwind Rebuild
 
-- [ ] **Task 8.25:** Run `make css` to rebuild `static/css/tailwind.min.css`
+- [x] **Task 8.25:** Run `make css` to rebuild `static/css/tailwind.min.css`
   including all new admin template classes. Verify the built file is under
   300KB (admin templates add more classes than operator templates). Update
   `tailwind.config.js` to include `"templates/admin/**/*.html"` in the
@@ -1737,7 +1737,7 @@ FROM shifts s
 
 ### 10h — Admin UI Route Tests
 
-- [ ] **Task 10.8:** Create `tests/integration/test_ui_admin_routes.py`. Write:
+- [x] **Task 10.8:** Create `tests/integration/test_ui_admin_routes.py`. Write:
   - `test_dashboard_requires_admin` (async): GET `/ui/admin/dashboard` as
     operator. Asserts `303` redirect to `/ui/login?next=/ui/admin/dashboard`.
   - `test_dashboard_renders_as_admin` (async): GET as admin. Asserts `200`

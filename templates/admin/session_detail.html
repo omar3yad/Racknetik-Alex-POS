@@ -1,0 +1,160 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}تفاصيل الجلسة #{{ session.id | zfill(8) | to_arabic_indic }} — PGMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Top Navigation & Actions -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="/ui/admin/sessions" class="text-sm text-indigo-400 hover:text-indigo-300 transition flex items-center gap-1">
+        <span>←</span>
+        <span>رجوع إلى الجلسات</span>
+      </a>
+      <h1 class="text-xl font-bold text-white">تفاصيل الجلسة #{{ session.id | zfill(8) | to_arabic_indic }}</h1>
+    </div>
+
+    <div>
+      <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold {% if session.status.value == 'ACTIVE' or session.status == 'ACTIVE' %}bg-cyan-900/60 text-cyan-300 border border-cyan-700/50{% elif session.status.value == 'COMPLETED' or session.status == 'COMPLETED' %}bg-emerald-900/60 text-emerald-300 border border-emerald-700/50{% else %}bg-red-900/60 text-red-300 border border-red-700/50{% endif %}">
+        {{ session.status | session_status_label }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Detail Card with Definition List (Two-Column) -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-6 shadow">
+    <h2 class="text-base font-bold text-white border-b border-gray-700/60 pb-3 mb-4">بيانات الجلسة الكاملة</h2>
+    <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">رقم الجلسة</dt>
+        <dd class="font-mono text-white font-medium">#{{ session.id | zfill(8) | to_arabic_indic }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">كود الكرت</dt>
+        <dd class="font-mono text-indigo-300 font-medium">{{ session.card_code }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">رقم اللوحة</dt>
+        <dd class="text-white font-medium">{{ session.plate_number or "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">بوابة الدخول</dt>
+        <dd class="text-white font-medium">بوابة {{ session.gate_number | to_arabic_indic }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">عامل الدخول</dt>
+        <dd class="text-white font-medium">{{ operator.full_name if operator else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">وقت الدخول</dt>
+        <dd class="text-gray-300">{{ session.entry_time | format_datetime }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">وقت الخروج</dt>
+        <dd class="text-gray-300">{{ session.exit_time | format_datetime if session.exit_time else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">عامل الخروج</dt>
+        <dd class="text-white font-medium">{{ exit_operator.full_name if exit_operator else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">مدة الوقوف</dt>
+        <dd class="text-indigo-300 font-medium">{{ session.duration_minutes | format_duration if session.duration_minutes is not none else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">التعريفة المطبقة</dt>
+        <dd class="text-white font-medium">{{ pricing_rule.label if pricing_rule else "التعريفة الافتراضية" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">المبلغ المحسوب</dt>
+        <dd class="font-bold text-emerald-400">{{ session.amount_charged | format_egp if session.amount_charged is not none else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">كرت مفقود</dt>
+        <dd class="font-medium {{ 'text-red-400' if session.is_lost_card else 'text-gray-300' }}">{{ "نعم" if session.is_lost_card else "لا" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">غرامة الفقدان</dt>
+        <dd class="text-white">{{ session.lost_card_penalty_applied | format_egp if session.lost_card_penalty_applied is not none else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">طريقة الدفع</dt>
+        <dd class="text-white">{{ session.payment_method.value if session.payment_method else "نقدي" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">حالة السداد</dt>
+        <dd class="font-semibold {{ 'text-emerald-400' if session.is_paid else 'text-amber-400' }}">{{ "نعم" if session.is_paid else "لا" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">تاريخ طباعة الإيصال</dt>
+        <dd class="text-gray-300">{{ session.receipt_printed_at | format_datetime if session.receipt_printed_at else "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">ملاحظة التدخل الإداري</dt>
+        <dd class="text-amber-300">{{ session.admin_override_note or "—" }}</dd>
+      </div>
+
+      <div class="flex justify-between border-b border-gray-700/30 pb-2">
+        <dt class="text-gray-400">ملاحظات عامة</dt>
+        <dd class="text-gray-300">{{ session.notes or "—" }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Audit Log Section -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+      <h2 class="font-bold text-white text-base">سجل التدقيق (Audit Logs)</h2>
+      <span class="text-xs text-gray-400">{{ audit_logs | length | to_arabic_indic }} عمليات مسجلة</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-xs">
+        <thead class="bg-gray-900/60 text-gray-400 uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">الوقت والتاريخ</th>
+            <th class="p-3">المستخدم / الفاعل</th>
+            <th class="p-3">نوع الإجراء</th>
+            <th class="p-3">الحالة السابقة</th>
+            <th class="p-3">الحالة اللاحقة</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700/60 font-mono">
+          {% for log in audit_logs %}
+          <tr class="hover:bg-gray-700/30">
+            <td class="p-3 text-gray-300 whitespace-nowrap">{{ log.created_at | format_datetime }}</td>
+            <td class="p-3 text-indigo-300 whitespace-nowrap">مستخدم #{{ log.actor_id | to_arabic_indic }}</td>
+            <td class="p-3 font-semibold text-amber-300 whitespace-nowrap">{{ log.action }}</td>
+            <td class="p-3 text-gray-400 max-w-xs truncate" title="{{ log.payload_before or '' }}">
+              {{ (log.payload_before[:80] + '...') if log.payload_before and log.payload_before|length > 80 else (log.payload_before or '—') }}
+            </td>
+            <td class="p-3 text-gray-300 max-w-xs truncate" title="{{ log.payload_after or '' }}">
+              {{ (log.payload_after[:80] + '...') if log.payload_after and log.payload_after|length > 80 else (log.payload_after or '—') }}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="5" class="p-4 text-center text-gray-500">لا توجد سجلات تدقيق لهذه الجلسة</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

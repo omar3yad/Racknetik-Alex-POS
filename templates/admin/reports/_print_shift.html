@@ -1,0 +1,86 @@
+<div style="margin-top: 12px;">
+  <!-- Shift Details Header -->
+  <div class="section-title">بيانات الشيفت #{{ data.shift.id | to_arabic_indic }}</div>
+  <table style="margin-bottom: 16px;">
+    <tbody>
+      <tr>
+        <th style="width: 25%;">العامل المسؤول</th>
+        <td style="width: 25%;">{{ data.operator.full_name if data.operator else "—" }}</td>
+        <th style="width: 25%;">البوابة</th>
+        <td style="width: 25%;">بوابة {{ data.shift.gate_number | to_arabic_indic }}</td>
+      </tr>
+      <tr>
+        <th>وقت البداية</th>
+        <td>{{ data.shift.started_at | format_datetime }}</td>
+        <th>وقت النهاية</th>
+        <td>{{ data.shift.ended_at | format_datetime if data.shift.ended_at else "مفتوح" }}</td>
+      </tr>
+      {% if data.shift.admin_override_note %}
+      <tr>
+        <th>ملاحظة الإغلاق الإداري</th>
+        <td colspan="3" style="color: #b45309;">{{ data.shift.admin_override_note }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <!-- Financial Summary -->
+  <div class="section-title">الملخص المالي والإحصائي</div>
+  <table style="margin-bottom: 16px;">
+    <thead>
+      <tr>
+        <th>إجمالي الجلسات</th>
+        <th>جلسات مكتملة</th>
+        <th>كروت مفقودة</th>
+        <th>جلسات نشطة</th>
+        <th>الإيراد المحسوب</th>
+        <th>النقدية عند الإغلاق</th>
+        <th>الفارق</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ data.summary.total_sessions | to_arabic_indic }}</td>
+        <td>{{ data.summary.completed_sessions | to_arabic_indic }}</td>
+        <td>{{ data.summary.lost_card_sessions | to_arabic_indic }}</td>
+        <td>{{ data.summary.active_sessions | to_arabic_indic }}</td>
+        <td style="font-weight: bold;">{{ data.summary.computed_total_piastres | format_egp }} ج.م</td>
+        <td style="font-weight: bold;">{{ data.summary.closing_cash_piastres | format_egp if data.summary.closing_cash_piastres is not none else "—" }}</td>
+        <td style="font-weight: bold;">{{ data.summary.discrepancy_piastres | format_egp if data.summary.discrepancy_piastres is not none else "—" }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Sessions Table -->
+  <div class="section-title">قائمة جلسات الشيفت ({{ data.total_sessions | to_arabic_indic }} جلسة)</div>
+  <table>
+    <thead>
+      <tr>
+        <th>رقم الجلسة</th>
+        <th>كود الكرت</th>
+        <th>رقم اللوحة</th>
+        <th>وقت الدخول</th>
+        <th>وقت الخروج</th>
+        <th>المدة</th>
+        <th>المبلغ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in data.sessions %}
+      <tr>
+        <td>#{{ s.id | zfill(8) | to_arabic_indic }}</td>
+        <td>{{ s.card_code }}</td>
+        <td>{{ s.plate_number or "—" }}</td>
+        <td>{{ s.entry_time | format_datetime }}</td>
+        <td>{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
+        <td>{{ s.duration_minutes | format_duration if s.duration_minutes is not none else "—" }}</td>
+        <td>{{ s.amount_charged | format_egp if s.amount_charged is not none else "—" }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7" style="text-align: center; color: #777;">لا توجد جلسات في هذا الشيفت</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

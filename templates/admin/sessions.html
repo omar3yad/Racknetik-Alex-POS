@@ -1,0 +1,171 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("admin.sessions.title") }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Title & CSV Export -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ t("admin.sessions.title") }}</h1>
+      <p class="text-sm text-gray-400 mt-1">سجل وبحث كافة جلسات الوقوف في المرآب</p>
+    </div>
+    <div>
+      <a href="/api/v1/admin/sessions/export/csv?{% if filters.start_date %}start_date={{ filters.start_date }}&{% endif %}{% if filters.end_date %}end_date={{ filters.end_date }}&{% endif %}{% if filters.gate_number %}gate_number={{ filters.gate_number }}&{% endif %}{% if filters.operator_id %}operator_id={{ filters.operator_id }}&{% endif %}{% if filters.status %}status={{ filters.status }}&{% endif %}{% if filters.card_code %}card_code={{ filters.card_code }}&{% endif %}{% if filters.plate_number %}plate_number={{ filters.plate_number }}&{% endif %}{% if filters.long_stay %}long_stay=true&{% endif %}" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+        <span>📥</span>
+        <span>{{ t("admin.export.csv_button") }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="GET" action="/ui/admin/sessions" class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-4 shadow">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <!-- Start Date -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">{{ t("admin.filter.start_date") }}</label>
+        <input type="date" name="start_date" value="{{ filters.start_date or '' }}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- End Date -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">{{ t("admin.filter.end_date") }}</label>
+        <input type="date" name="end_date" value="{{ filters.end_date or '' }}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Gate Number -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">البوابة</label>
+        <select name="gate_number" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <option value="">الكل</option>
+          {% for g in range(1, 6) %}
+          <option value="{{ g }}" {% if filters.gate_number == g %}selected{% endif %}>{{ g | to_arabic_indic }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Operator -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">العامل</label>
+        <select name="operator_id" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <option value="">الكل</option>
+          {% for op in all_operators %}
+          <option value="{{ op.id }}" {% if filters.operator_id == op.id %}selected{% endif %}>{{ op.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">الحالة</label>
+        <select name="status" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+          <option value="">الكل</option>
+          <option value="ACTIVE" {% if filters.status == 'ACTIVE' %}selected{% endif %}>داخل</option>
+          <option value="COMPLETED" {% if filters.status == 'COMPLETED' %}selected{% endif %}>خرج</option>
+          <option value="LOST_CARD" {% if filters.status == 'LOST_CARD' %}selected{% endif %}>كرت مفقود</option>
+        </select>
+      </div>
+
+      <!-- Card Code -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">كود الكرت</label>
+        <input type="text" name="card_code" value="{{ filters.card_code or '' }}" placeholder="بحث بالكود..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Plate Number -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">رقم اللوحة</label>
+        <input type="text" name="plate_number" value="{{ filters.plate_number or '' }}" placeholder="أرقام / حروف..." class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Long Stay & Submit -->
+      <div class="flex items-end gap-2">
+        <label class="flex items-center gap-1.5 cursor-pointer pb-2 text-xs text-amber-300 whitespace-nowrap">
+          <input type="checkbox" name="long_stay" value="true" {% if filters.long_stay %}checked{% endif %} class="rounded bg-gray-900 border-gray-700 text-indigo-600 focus:ring-0">
+          <span>&gt;٢٤س</span>
+        </label>
+        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 px-2 rounded-lg text-xs transition">
+          {{ t("admin.filter.submit") }}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Showing count -->
+  <div class="flex items-center justify-between text-xs text-gray-400">
+    {% if total > 0 %}
+    {% set from_item = (page - 1) * size + 1 %}
+    {% set to_item = page * size if (page * size) < total else total %}
+    <span>{{ t("admin.pagination.showing") | replace("{from}", from_item | to_arabic_indic) | replace("{to}", to_item | to_arabic_indic) | replace("{total}", total | to_arabic_indic) }}</span>
+    {% else %}
+    <span>{{ t("admin.table.no_results") }}</span>
+    {% endif %}
+  </div>
+
+  <!-- Sessions Table -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">رقم الجلسة</th>
+            <th class="p-3">كود الكرت</th>
+            <th class="p-3">رقم اللوحة</th>
+            <th class="p-3">البوابة</th>
+            <th class="p-3">العامل</th>
+            <th class="p-3">الحالة</th>
+            <th class="p-3">وقت الدخول</th>
+            <th class="p-3">وقت الخروج</th>
+            <th class="p-3">المدة</th>
+            <th class="p-3">المبلغ</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700/60">
+          {% for s in sessions %}
+          <tr onclick="window.location.href='/ui/admin/sessions/{{ s.id }}'" class="cursor-pointer hover:bg-gray-700/40 transition">
+            <td class="p-3 font-mono font-medium text-white">#{{ s.id | zfill(8) | to_arabic_indic }}</td>
+            <td class="p-3 font-mono text-indigo-300">{{ s.card_code }}</td>
+            <td class="p-3 text-gray-200">{{ s.plate_number or "—" }}</td>
+            <td class="p-3 text-gray-300">بوابة {{ s.gate_number | to_arabic_indic }}</td>
+            <td class="p-3 text-gray-300">{{ operator_names.get(s.operator_id, "—") }}</td>
+            <td class="p-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {% if s.status.value == 'ACTIVE' or s.status == 'ACTIVE' %}bg-cyan-900/60 text-cyan-300 border border-cyan-700/50{% elif s.status.value == 'COMPLETED' or s.status == 'COMPLETED' %}bg-emerald-900/60 text-emerald-300 border border-emerald-700/50{% else %}bg-red-900/60 text-red-300 border border-red-700/50{% endif %}">
+                {{ s.status | session_status_label }}
+              </span>
+            </td>
+            <td class="p-3 text-gray-400 text-xs">{{ s.entry_time | format_datetime }}</td>
+            <td class="p-3 text-gray-400 text-xs">{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
+            <td class="p-3 text-gray-300">{{ s.duration_minutes | format_duration if s.duration_minutes is not none else "—" }}</td>
+            <td class="p-3 font-semibold text-emerald-400">{{ s.amount_charged | format_egp if s.amount_charged is not none else "—" }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="10" class="p-6 text-center text-gray-400">{{ t("admin.table.no_results") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total > size %}
+    {% set total_pages = ((total - 1) // size) + 1 %}
+    <div class="p-4 border-t border-gray-700 flex items-center justify-between text-sm">
+      <div>
+        {% if page > 1 %}
+        <a href="/ui/admin/sessions?page={{ page - 1 }}&size={{ size }}{% if filters.gate_number %}&gate_number={{ filters.gate_number }}{% endif %}{% if filters.operator_id %}&operator_id={{ filters.operator_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.card_code %}&card_code={{ filters.card_code }}{% endif %}{% if filters.plate_number %}&plate_number={{ filters.plate_number }}{% endif %}{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}{% if filters.long_stay %}&long_stay=true{% endif %}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition">السابق</a>
+        {% endif %}
+      </div>
+      <div class="text-gray-400">
+        صفحة {{ page | to_arabic_indic }} من {{ total_pages | to_arabic_indic }}
+      </div>
+      <div>
+        {% if page < total_pages %}
+        <a href="/ui/admin/sessions?page={{ page + 1 }}&size={{ size }}{% if filters.gate_number %}&gate_number={{ filters.gate_number }}{% endif %}{% if filters.operator_id %}&operator_id={{ filters.operator_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.card_code %}&card_code={{ filters.card_code }}{% endif %}{% if filters.plate_number %}&plate_number={{ filters.plate_number }}{% endif %}{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}{% if filters.long_stay %}&long_stay=true{% endif %}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition">التالي</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

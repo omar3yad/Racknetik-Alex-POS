@@ -1,0 +1,271 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("admin.rates.title") }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Title & New Rate Toggle Button -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ t("admin.rates.title") }}</h1>
+      <p class="text-sm text-gray-400 mt-1">إدارة تسعير وقوف السيارات وقواعد المحاسبة</p>
+    </div>
+    <div>
+      <button id="toggle-new-rate-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 shadow">
+        <span>➕</span>
+        <span>{{ t("admin.rates.create") }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Inline New Rate Form (Collapsible) -->
+  <div id="new-rate-container" class="hidden bg-gray-800/90 border border-indigo-500/40 rounded-xl p-5 shadow-lg">
+    <h2 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+      <span>➕</span>
+      <span>{{ t("admin.rates.create") }}</span>
+    </h2>
+
+    <div id="form-error-msg" class="hidden bg-red-950/80 border border-red-500 text-red-200 text-sm p-3 rounded-lg mb-4"></div>
+
+    <form id="create-rate-form" class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <!-- Label -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">اسم التعريفة / الوصف *</label>
+          <input type="text" id="rate-label" required placeholder="مثال: التعريفة القياسية ٢٠٢٦" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Rate Per Hour (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">سعر الساعة (ج.م) *</label>
+          <input type="number" id="rate-per-hour" step="0.01" min="0" required placeholder="10.00" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 non-negative">
+        </div>
+
+        <!-- Grace Period (Mins) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">فترة السماح المجانية (دقائق)</label>
+          <input type="number" id="rate-grace" min="0" value="15" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 non-negative">
+        </div>
+
+        <!-- Minimum Charge (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">الحد الأدنى للمحاسبة (ج.م)</label>
+          <input type="number" id="rate-min-charge" step="0.01" min="0" value="0.00" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 non-negative">
+        </div>
+
+        <!-- Lost Card Penalty (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">غرامة الكرت المفقود (ج.م)</label>
+          <input type="number" id="rate-lost-penalty" step="0.01" min="0" value="50.00" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 non-negative">
+        </div>
+
+        <!-- Effective From -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">سارية من تاريخ / وقت</label>
+          <input type="datetime-local" id="rate-effective-from" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" id="cancel-form-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm transition">إلغاء</button>
+        <button type="submit" id="save-rate-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-lg text-sm transition">حفظ التعريفة</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Rules Table -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+      <h2 class="font-bold text-white text-base">سجل التعريفات</h2>
+      <span class="text-xs text-gray-400">إجمالي: {{ rules | length | to_arabic_indic }}</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">#</th>
+            <th class="p-3">اسم التعريفة</th>
+            <th class="p-3">سعر الساعة</th>
+            <th class="p-3">فترة السماح</th>
+            <th class="p-3">الحد الأدنى</th>
+            <th class="p-3">غرامة الفقدان</th>
+            <th class="p-3">تاريخ السريان</th>
+            <th class="p-3">الحالة</th>
+            <th class="p-3">الإجراء</th>
+          </tr>
+        </thead>
+        <tbody id="rates-table-body" class="divide-y divide-gray-700/60">
+          {% for r in rules %}
+          <tr id="rule-row-{{ r.id }}" class="hover:bg-gray-700/30 transition">
+            <td class="p-3 font-mono text-gray-400">#{{ r.id | to_arabic_indic }}</td>
+            <td class="p-3 font-medium text-white">{{ r.label }}</td>
+            <td class="p-3 font-semibold text-emerald-400">{{ r.rate_per_hour | format_egp }} ج.م</td>
+            <td class="p-3 text-gray-300">{{ r.grace_period_mins | to_arabic_indic }} دقيقة</td>
+            <td class="p-3 text-gray-300">{{ r.minimum_charge | format_egp }} ج.م</td>
+            <td class="p-3 text-red-400">{{ r.lost_card_penalty | format_egp }} ج.م</td>
+            <td class="p-3 text-gray-400 text-xs">{{ r.effective_from | format_datetime }}</td>
+            <td class="p-3">
+              <span class="rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50' if r.is_active else 'bg-gray-700 text-gray-400' }}">
+                {{ "نشطة" if r.is_active else "معطلة" }}
+              </span>
+            </td>
+            <td class="p-3">
+              <button onclick="activateRule({{ r.id }})" class="activate-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1 rounded transition disabled:opacity-40 disabled:cursor-not-allowed" {% if r.is_active %}disabled{% endif %}>
+                {{ t("admin.rates.activate") }}
+              </button>
+            </td>
+          </tr>
+          {% else %}
+          <tr id="no-rules-row">
+            <td colspan="9" class="p-6 text-center text-gray-400">لا توجد تعريفات مسجلة</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Prevent negative inputs
+  document.querySelectorAll('.non-negative').forEach(input => {
+    input.addEventListener('input', () => {
+      if (parseFloat(input.value) < 0) {
+        input.value = 0;
+      }
+    });
+  });
+
+  // Toggle container
+  const toggleBtn = document.getElementById('toggle-new-rate-btn');
+  const cancelBtn = document.getElementById('cancel-form-btn');
+  const container = document.getElementById('new-rate-container');
+  const form = document.getElementById('create-rate-form');
+  const errDiv = document.getElementById('form-error-msg');
+
+  if (toggleBtn && container) {
+    toggleBtn.addEventListener('click', () => {
+      container.classList.toggle('hidden');
+      errDiv.classList.add('hidden');
+    });
+    cancelBtn.addEventListener('click', () => {
+      container.classList.add('hidden');
+      errDiv.classList.add('hidden');
+    });
+  }
+
+  // Convert number to Arabic Indic
+  function toArabic(num) {
+    const map = {'0':'٠','1':'١','2':'٢','3':'٣','4':'٤','5':'٥','6':'٦','7':'٧','8':'٨','9':'٩'};
+    return String(num).replace(/[0-9]/g, d => map[d] || d);
+  }
+
+  // Activate Rule
+  async function activateRule(ruleId) {
+    try {
+      const res = await fetch(`/api/v1/rates/${ruleId}/activate`, {
+        method: 'PATCH'
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'فشل تفعيل التعريفة');
+      }
+
+      // Update UI badges
+      document.querySelectorAll('#rates-table-body tr').forEach(row => {
+        const badge = row.querySelector('.rule-status-badge');
+        const btn = row.querySelector('.activate-btn');
+        if (row.id === `rule-row-${ruleId}`) {
+          if (badge) {
+            badge.className = 'rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-900/60 text-emerald-300 border border-emerald-700/50';
+            badge.textContent = 'نشطة';
+          }
+          if (btn) btn.disabled = true;
+        } else {
+          if (badge) {
+            badge.className = 'rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-400';
+            badge.textContent = 'معطلة';
+          }
+          if (btn) btn.disabled = false;
+        }
+      });
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // Create Rate via fetch POST
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errDiv.classList.add('hidden');
+
+    const label = document.getElementById('rate-label').value.trim();
+    const ratePerHour = parseFloat(document.getElementById('rate-per-hour').value) || 0;
+    const gracePeriod = parseInt(document.getElementById('rate-grace').value, 10) || 0;
+    const minCharge = parseFloat(document.getElementById('rate-min-charge').value) || 0;
+    const lostPenalty = parseFloat(document.getElementById('rate-lost-penalty').value) || 0;
+    const effFrom = document.getElementById('rate-effective-from').value;
+
+    const payload = {
+      label: label,
+      rate_per_hour_egp: ratePerHour,
+      grace_period_mins: gracePeriod,
+      minimum_charge_egp: minCharge,
+      lost_card_penalty_egp: lostPenalty,
+      effective_from: effFrom ? new Date(effFrom).toISOString() : null
+    };
+
+    try {
+      const res = await fetch('/api/v1/rates/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'حدث خطأ أثناء حفظ التعريفة');
+      }
+
+      const json = await res.json();
+      const r = json.data;
+
+      // Insert row at top of table
+      const tbody = document.getElementById('rates-table-body');
+      const noRules = document.getElementById('no-rules-row');
+      if (noRules) noRules.remove();
+
+      const tr = document.createElement('tr');
+      tr.id = `rule-row-${r.id}`;
+      tr.className = 'hover:bg-gray-700/30 transition bg-indigo-950/20';
+      tr.innerHTML = `
+        <td class="p-3 font-mono text-gray-400">#${toArabic(r.id)}</td>
+        <td class="p-3 font-medium text-white">${r.label}</td>
+        <td class="p-3 font-semibold text-emerald-400">${(r.rate_per_hour/100).toFixed(2)} ج.م</td>
+        <td class="p-3 text-gray-300">${toArabic(r.grace_period_mins)} دقيقة</td>
+        <td class="p-3 text-gray-300">${(r.minimum_charge/100).toFixed(2)} ج.م</td>
+        <td class="p-3 text-red-400">${(r.lost_card_penalty/100).toFixed(2)} ج.م</td>
+        <td class="p-3 text-gray-400 text-xs">${r.effective_from ? r.effective_from.replace('T', ' ').substring(0, 16) : '—'}</td>
+        <td class="p-3">
+          <span class="rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-400">معطلة</span>
+        </td>
+        <td class="p-3">
+          <button onclick="activateRule(${r.id})" class="activate-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1 rounded transition">
+            {{ t("admin.rates.activate") }}
+          </button>
+        </td>
+      `;
+      tbody.prepend(tr);
+
+      // Reset form and close
+      form.reset();
+      container.classList.add('hidden');
+    } catch (err) {
+      errDiv.textContent = err.message;
+      errDiv.classList.remove('hidden');
+    }
+  });
+</script>
+{% endblock %}

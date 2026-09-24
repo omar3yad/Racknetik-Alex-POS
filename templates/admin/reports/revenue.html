@@ -1,0 +1,186 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("admin.reports.revenue_title") }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Title & Action Buttons -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ t("admin.reports.revenue_title") }}</h1>
+      <p class="text-sm text-gray-400 mt-1">تقارير الإيرادات المجمعة والتفصيلية للمرآب</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="/api/v1/admin/reports/export/csv?{% if filters.start_date %}start_date={{ filters.start_date }}&{% endif %}{% if filters.end_date %}end_date={{ filters.end_date }}&{% endif %}{% if filters.gate_number %}gate_number={{ filters.gate_number }}&{% endif %}{% if filters.operator_id %}operator_id={{ filters.operator_id }}&{% endif %}" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+        <span>📥</span>
+        <span>{{ t("admin.export.csv_button") }}</span>
+      </a>
+      <a href="/ui/admin/reports/print?report_type=revenue&{% if filters.start_date %}start_date={{ filters.start_date }}&{% endif %}{% if filters.end_date %}end_date={{ filters.end_date }}&{% endif %}{% if filters.gate_number %}gate_number={{ filters.gate_number }}&{% endif %}{% if filters.operator_id %}operator_id={{ filters.operator_id }}&{% endif %}" target="_blank" class="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 px-4 py-2 rounded-lg text-sm transition flex items-center gap-2">
+        <span>🖨️</span>
+        <span>{{ t("admin.print.button") }}</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="GET" action="/ui/admin/reports/revenue" class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-4 shadow">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+      <!-- Start Date -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">{{ t("admin.filter.start_date") }}</label>
+        <input type="date" name="start_date" value="{{ filters.start_date or '' }}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- End Date -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">{{ t("admin.filter.end_date") }}</label>
+        <input type="date" name="end_date" value="{{ filters.end_date or '' }}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Gate Number -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">البوابة</label>
+        <select name="gate_number" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="">{{ t("admin.filter.all_gates") }}</option>
+          {% for g in range(1, 6) %}
+          <option value="{{ g }}" {% if filters.gate_number == g %}selected{% endif %}>بوابة {{ g | to_arabic_indic }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Operator -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">العامل</label>
+        <select name="operator_id" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="">{{ t("admin.filter.all_operators") }}</option>
+          {% for op in all_operators %}
+          <option value="{{ op.id }}" {% if filters.operator_id == op.id %}selected{% endif %}>{{ op.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Submit -->
+      <div class="flex items-end">
+        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 px-3 rounded-lg text-sm transition">
+          {{ t("admin.filter.submit") }}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Summary KPI Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
+      <p class="text-xs text-gray-400 font-medium">إجمالي الإيرادات</p>
+      <p class="text-2xl font-bold text-emerald-400 mt-2">{{ summary.total_revenue_piastres | format_egp }}</p>
+    </div>
+    <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
+      <p class="text-xs text-gray-400 font-medium">إجمالي الجلسات</p>
+      <p class="text-2xl font-bold text-white mt-2">{{ summary.total_sessions | to_arabic_indic }}</p>
+    </div>
+    <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
+      <p class="text-xs text-gray-400 font-medium">متوسط مدة الجلسة</p>
+      <p class="text-2xl font-bold text-indigo-400 mt-2">{{ summary.avg_duration_minutes | format_duration }}</p>
+    </div>
+    <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
+      <p class="text-xs text-gray-400 font-medium">متوسط قيمة التذكرة</p>
+      <p class="text-2xl font-bold text-cyan-400 mt-2">{{ summary.avg_revenue_piastres | format_egp }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- By Gate Table -->
+    <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+      <div class="p-4 border-b border-gray-700">
+        <h2 class="font-bold text-white text-base">الإيرادات حسب البوابات</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-right text-sm">
+          <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+            <tr>
+              <th class="p-3">رقم البوابة</th>
+              <th class="p-3">عدد الجلسات</th>
+              <th class="p-3">إجمالي الإيراد</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700/60">
+            {% for g in by_gate %}
+            <tr class="hover:bg-gray-700/30">
+              <td class="p-3 font-semibold text-white">بوابة {{ g.gate_number | to_arabic_indic }}</td>
+              <td class="p-3 text-indigo-300">{{ g.session_count | to_arabic_indic }}</td>
+              <td class="p-3 font-bold text-emerald-400">{{ g.total_piastres | format_egp }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="p-4 text-center text-gray-400">لا توجد بيانات بوابات</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- By Operator Table -->
+    <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+      <div class="p-4 border-b border-gray-700">
+        <h2 class="font-bold text-white text-base">الإيرادات حسب العمال</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-right text-sm">
+          <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+            <tr>
+              <th class="p-3">اسم العامل</th>
+              <th class="p-3">عدد الجلسات</th>
+              <th class="p-3">إجمالي الإيراد</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700/60">
+            {% for op in by_operator %}
+            <tr class="hover:bg-gray-700/30">
+              <td class="p-3 font-semibold text-white">{{ op.operator_name }}</td>
+              <td class="p-3 text-indigo-300">{{ op.session_count | to_arabic_indic }}</td>
+              <td class="p-3 font-bold text-emerald-400">{{ op.total_piastres | format_egp }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="3" class="p-4 text-center text-gray-400">لا توجد بيانات عمال</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Revenue Table -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="p-4 border-b border-gray-700">
+      <h2 class="font-bold text-white text-base">الإيراد اليومي التفصيلي</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">التاريخ</th>
+            <th class="p-3">عدد الجلسات</th>
+            <th class="p-3">إجمالي الإيراد</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700/60">
+          {% for d in daily %}
+          <tr class="hover:bg-gray-700/30 {{ 'text-gray-500' if d.session_count == 0 else '' }}">
+            <td class="p-3 font-mono font-medium {{ 'text-gray-500' if d.session_count == 0 else 'text-white' }}">{{ d.date_str }}</td>
+            <td class="p-3 {{ 'text-gray-500' if d.session_count == 0 else 'text-indigo-300' }}">{{ d.session_count | to_arabic_indic }}</td>
+            <td class="p-3 font-bold {{ 'text-gray-500' if d.session_count == 0 else 'text-emerald-400' }}">{{ d.total_piastres | format_egp }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="p-4 text-center text-gray-400">لا توجد بيانات يومية للنطاق المحدد</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

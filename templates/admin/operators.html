@@ -1,0 +1,319 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("admin.operators.title") }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Title & New Operator Toggle Button -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ t("admin.operators.title") }}</h1>
+      <p class="text-sm text-gray-400 mt-1">إدارة حسابات العمال والمشرفين وصلاحيات الدخول</p>
+    </div>
+    <div>
+      <button id="toggle-new-user-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 shadow">
+        <span>➕</span>
+        <span>إنشاء مستخدم / عامل جديد</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Inline New Operator Form (Collapsible) -->
+  <div id="new-user-container" class="hidden bg-gray-800/90 border border-indigo-500/40 rounded-xl p-5 shadow-lg">
+    <h2 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+      <span>➕</span>
+      <span>إنشاء حساب مستخدم جديد</span>
+    </h2>
+
+    <div id="user-form-error" class="hidden bg-red-950/80 border border-red-500 text-red-200 text-sm p-3 rounded-lg mb-4"></div>
+
+    <form id="create-user-form" class="space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <!-- Full Name -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">الاسم بالكامل *</label>
+          <input type="text" id="user-fullname" required placeholder="مثال: أحمد محمود" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Username -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">اسم المستخدم (إنجليزي) *</label>
+          <input type="text" id="user-username" required pattern="^[a-zA-Z0-9_]+$" placeholder="ahmed_op" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">كلمة المرور (٨ خانات على الأقل) *</label>
+          <input type="password" id="user-password" required minlength="8" placeholder="••••••••" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Role -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">الدور والصلاحية *</label>
+          <select id="user-role" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            <option value="operator" selected>عامل بوابة (Operator)</option>
+            <option value="admin">مسؤول نظام (Admin)</option>
+          </select>
+        </div>
+
+        <!-- Gate Number (only for operator) -->
+        <div id="gate-number-field">
+          <label class="block text-xs font-medium text-gray-300 mb-1">رقم البوابة الافتراضية *</label>
+          <select id="user-gate" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+            {% for g in range(1, 6) %}
+            <option value="{{ g }}">بوابة {{ g | to_arabic_indic }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" id="cancel-user-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm transition">إلغاء</button>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-lg text-sm transition">إنشاء الحساب</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Operators Table -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+      <h2 class="font-bold text-white text-base">سجل المستخدمين والعمال</h2>
+      <span class="text-xs text-gray-400">إجمالي: {{ operators | length | to_arabic_indic }}</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">الاسم بالكامل</th>
+            <th class="p-3">اسم المستخدم</th>
+            <th class="p-3">الدور</th>
+            <th class="p-3">البوابة</th>
+            <th class="p-3">حالة الحساب</th>
+            <th class="p-3">حالة الشيفت</th>
+            <th class="p-3">آخر شيفت</th>
+            <th class="p-3">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700/60">
+          {% for item in operators %}
+          {% set u = item.user %}
+          <tr id="user-row-{{ u.id }}" class="hover:bg-gray-700/30 transition">
+            <td class="p-3 font-semibold text-white">{{ u.full_name }}</td>
+            <td class="p-3 font-mono text-gray-300">{{ u.username }}</td>
+            <td class="p-3 text-xs">
+              <span class="inline-flex items-center px-2 py-0.5 rounded {{ 'bg-indigo-900/60 text-indigo-300' if u.role.value == 'admin' or u.role == 'admin' else 'bg-gray-700 text-gray-300' }}">
+                {{ "مسؤول" if u.role.value == 'admin' or u.role == 'admin' else "عامل" }}
+              </span>
+            </td>
+            <td class="p-3 text-gray-300">
+              {{ ("بوابة " + (u.gate_number | to_arabic_indic)) if u.gate_number else "—" }}
+            </td>
+            <td class="p-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50' if u.is_active else 'bg-red-900/60 text-red-300 border border-red-700/50' }}">
+                {{ "نشط" if u.is_active else "معطل" }}
+              </span>
+            </td>
+            <td class="p-3">
+              {% if item.active_shift %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-900/60 text-emerald-300 border border-emerald-700/50">
+                شيفت مفتوح (#{{ item.active_shift.id | to_arabic_indic }})
+              </span>
+              {% else %}
+              <span class="text-xs text-gray-500">لا يوجد</span>
+              {% endif %}
+            </td>
+            <td class="p-3 text-gray-400 text-xs">
+              {{ item.last_shift_date | format_datetime if item.last_shift_date else "لا يوجد" }}
+            </td>
+            <td class="p-3">
+              <div class="flex items-center gap-2">
+                <button type="button" data-user-id="{{ u.id }}" data-full-name="{{ u.full_name }}" class="reset-pwd-btn bg-gray-700 hover:bg-gray-600 text-gray-200 text-xs px-2.5 py-1 rounded transition">
+                  إعادة كلمة المرور
+                </button>
+                {% if u.is_active %}
+                <button type="button" data-user-id="{{ u.id }}" class="deactivate-user-btn bg-red-900/60 hover:bg-red-800 text-red-200 text-xs px-2.5 py-1 rounded transition border border-red-700/50">
+                  تعطيل
+                </button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="p-6 text-center text-gray-400">لا يوجد مستخدمون مسجلون</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<dialog id="reset-password-dialog" class="bg-gray-900 border border-gray-700 text-white rounded-2xl p-6 max-w-sm w-full backdrop:bg-black/70 shadow-2xl">
+  <div class="space-y-4">
+    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+      <h3 class="text-base font-bold text-white">إعادة تعيين كلمة المرور</h3>
+      <button onclick="document.getElementById('reset-password-dialog').close()" class="text-gray-400 hover:text-white text-xl leading-none">&times;</button>
+    </div>
+    <p class="text-xs text-gray-300">للمستخدم: <span id="reset-modal-username" class="font-bold text-indigo-300"></span></p>
+
+    <div id="reset-error-msg" class="hidden bg-red-950/80 border border-red-500 text-red-200 text-xs p-2 rounded"></div>
+
+    <form id="reset-password-form" class="space-y-3">
+      <input type="hidden" id="reset-user-id">
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">كلمة المرور الجديدة (٨ خانات على الأقل)</label>
+        <input type="password" id="reset-new-password" required minlength="8" placeholder="••••••••" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="document.getElementById('reset-password-dialog').close()" class="bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg text-xs">إلغاء</button>
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-1.5 rounded-lg text-xs">حفظ</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Toggle form
+  const toggleBtn = document.getElementById('toggle-new-user-btn');
+  const cancelBtn = document.getElementById('cancel-user-btn');
+  const container = document.getElementById('new-user-container');
+  const roleSelect = document.getElementById('user-role');
+  const gateField = document.getElementById('gate-number-field');
+  const form = document.getElementById('create-user-form');
+  const errDiv = document.getElementById('user-form-error');
+
+  if (toggleBtn && container) {
+    toggleBtn.addEventListener('click', () => {
+      container.classList.toggle('hidden');
+      errDiv.classList.add('hidden');
+    });
+    cancelBtn.addEventListener('click', () => {
+      container.classList.add('hidden');
+      errDiv.classList.add('hidden');
+    });
+  }
+
+  // Hide gate number if role == admin
+  if (roleSelect && gateField) {
+    roleSelect.addEventListener('change', () => {
+      if (roleSelect.value === 'admin') {
+        gateField.classList.add('hidden');
+      } else {
+        gateField.classList.remove('hidden');
+      }
+    });
+  }
+
+  // Create User
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errDiv.classList.add('hidden');
+
+    const fullName = document.getElementById('user-fullname').value.trim();
+    const username = document.getElementById('user-username').value.trim();
+    const password = document.getElementById('user-password').value;
+    const role = document.getElementById('user-role').value;
+    const gateVal = document.getElementById('user-gate').value;
+
+    const payload = {
+      full_name: fullName,
+      username: username,
+      password: password,
+      role: role,
+      gate_number: role === 'operator' ? parseInt(gateVal, 10) : null
+    };
+
+    try {
+      const res = await fetch('/api/v1/users/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'فشل إنشاء المستخدم');
+      }
+
+      window.location.reload();
+    } catch (err) {
+      errDiv.textContent = err.message;
+      errDiv.classList.remove('hidden');
+    }
+  });
+
+  // Deactivate User
+  async function deactivateUser(userId) {
+    if (!confirm('هل أنت متأكد من تعطيل هذا المستخدم؟ لن يتمكن من تسجيل الدخول.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/v1/users/${userId}/deactivate`, {
+        method: 'PATCH'
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'فشل تعطيل الحساب');
+      }
+      window.location.reload();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // Reset Password Dialog
+  const resetDialog = document.getElementById('reset-password-dialog');
+  const resetForm = document.getElementById('reset-password-form');
+  const resetErr = document.getElementById('reset-error-msg');
+
+  function openResetModal(userId, fullName) {
+    document.getElementById('reset-user-id').value = userId;
+    document.getElementById('reset-modal-username').textContent = fullName;
+    document.getElementById('reset-new-password').value = '';
+    resetErr.classList.add('hidden');
+    resetDialog.showModal();
+  }
+
+  document.querySelectorAll('.reset-pwd-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openResetModal(btn.dataset.userId, btn.dataset.fullName);
+    });
+  });
+
+  document.querySelectorAll('.deactivate-user-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      deactivateUser(btn.dataset.userId);
+    });
+  });
+
+  resetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    resetErr.classList.add('hidden');
+    const userId = document.getElementById('reset-user-id').value;
+    const newPassword = document.getElementById('reset-new-password').value;
+
+    try {
+      const res = await fetch(`/api/v1/users/${userId}/reset-password`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_password: newPassword })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'فشل تعيين كلمة المرور');
+      }
+
+      resetDialog.close();
+      alert('تم تغيير كلمة المرور بنجاح.');
+    } catch (err) {
+      resetErr.textContent = err.message;
+      resetErr.classList.remove('hidden');
+    }
+  });
+</script>
+{% endblock %}

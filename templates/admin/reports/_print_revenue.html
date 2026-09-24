@@ -1,0 +1,97 @@
+<div style="margin-top: 12px;">
+  <!-- Summary Section -->
+  <div class="section-title">الملخص العام للإيرادات</div>
+  <table style="margin-bottom: 16px;">
+    <thead>
+      <tr>
+        <th>إجمالي الإيرادات</th>
+        <th>إجمالي الجلسات</th>
+        <th>متوسط مدة الجلسة</th>
+        <th>متوسط قيمة التذكرة</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-weight: bold; font-size: 13px;">{{ data.summary.total_revenue_piastres | format_egp }} ج.م</td>
+        <td>{{ data.summary.total_sessions | to_arabic_indic }}</td>
+        <td>{{ data.summary.avg_duration_minutes | format_duration }}</td>
+        <td>{{ data.summary.avg_revenue_piastres | format_egp }} ج.م</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- By Gate Table -->
+  <div class="section-title">الإيرادات حسب البوابات</div>
+  <table style="margin-bottom: 16px;">
+    <thead>
+      <tr>
+        <th>رقم البوابة</th>
+        <th>عدد الجلسات</th>
+        <th>إجمالي الإيراد</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in data.by_gate %}
+      <tr>
+        <td>بوابة {{ g.gate_number | to_arabic_indic }}</td>
+        <td>{{ g.session_count | to_arabic_indic }}</td>
+        <td style="font-weight: bold;">{{ g.total_piastres | format_egp }} ج.م</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3" style="text-align: center; color: #777;">لا توجد بيانات</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- By Operator Table -->
+  <div class="section-title">الإيرادات حسب العمال</div>
+  <table style="margin-bottom: 16px;">
+    <thead>
+      <tr>
+        <th>اسم العامل</th>
+        <th>عدد الجلسات</th>
+        <th>إجمالي الإيراد</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for op in data.by_operator %}
+      <tr>
+        <td>{{ op.operator_name }}</td>
+        <td>{{ op.session_count | to_arabic_indic }}</td>
+        <td style="font-weight: bold;">{{ op.total_piastres | format_egp }} ج.م</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3" style="text-align: center; color: #777;">لا توجد بيانات</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Daily Revenue Table -->
+  <div class="section-title">الإيرادات اليومية التفصيلية</div>
+  <table>
+    <thead>
+      <tr>
+        <th>التاريخ</th>
+        <th>عدد الجلسات</th>
+        <th>إجمالي الإيراد</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in data.daily %}
+      <tr style="{{ 'color: #888;' if d.session_count == 0 else '' }}">
+        <td>{{ d.date_str }}</td>
+        <td>{{ d.session_count | to_arabic_indic }}</td>
+        <td style="font-weight: bold;">{{ d.total_piastres | format_egp }} ج.م</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="3" style="text-align: center; color: #777;">لا توجد بيانات</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

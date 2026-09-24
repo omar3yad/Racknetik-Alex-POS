@@ -118,6 +118,10 @@ async def db_availability_middleware(request: Request, call_next):
 # Exception handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
+    if exc.status_code == 303 and exc.headers and "Location" in exc.headers:
+        return RedirectResponse(exc.headers["Location"], status_code=303)
+    if request.url.path.startswith("/ui/admin") and exc.status_code in (401, 403):
+        return RedirectResponse(f"/ui/login?next={request.url.path}", status_code=303)
     if request.url.path.startswith("/ui/") and exc.status_code == 401:
         return RedirectResponse("/ui/login", status_code=303)
         
@@ -153,6 +157,7 @@ from routes.rates import router as rates_router
 from routes.ui_operator import router as ui_operator_router
 from routes.subscriptions_api import router as subscriptions_api_router
 from routes.admin_api import router as admin_api_router
+from routes.ui_admin import router as ui_admin_router
 from routes.ui_subscriptions import router as ui_subscriptions_router
 
 # Include routers
@@ -166,6 +171,7 @@ app.include_router(rates_router)
 app.include_router(ui_operator_router)
 app.include_router(subscriptions_api_router)
 app.include_router(admin_api_router)
+app.include_router(ui_admin_router)
 app.include_router(ui_subscriptions_router)
 
 @app.get("/")

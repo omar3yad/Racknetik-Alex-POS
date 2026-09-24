@@ -1,0 +1,154 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ t("admin.shifts.title") }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Title -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">{{ t("admin.shifts.title") }}</h1>
+      <p class="text-sm text-gray-400 mt-1">متابعة وإدارة شيفتات العمال والبوابات</p>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="GET" action="/ui/admin/shifts" class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-4 shadow">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <!-- Start Date -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">{{ t("admin.filter.start_date") }}</label>
+        <input type="date" name="start_date" value="{{ filters.start_date or '' }}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- End Date -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">{{ t("admin.filter.end_date") }}</label>
+        <input type="date" name="end_date" value="{{ filters.end_date or '' }}" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <!-- Gate Number -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">البوابة</label>
+        <select name="gate_number" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="">{{ t("admin.filter.all_gates") }}</option>
+          {% for g in range(1, 6) %}
+          <option value="{{ g }}" {% if filters.gate_number == g %}selected{% endif %}>بوابة {{ g | to_arabic_indic }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Operator -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">العامل</label>
+        <select name="operator_id" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="">{{ t("admin.filter.all_operators") }}</option>
+          {% for op in all_operators %}
+          <option value="{{ op.id }}" {% if filters.operator_id == op.id %}selected{% endif %}>{{ op.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div>
+        <label class="block text-xs font-medium text-gray-300 mb-1">الحالة</label>
+        <select name="status" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <option value="">الكل</option>
+          <option value="open" {% if filters.status == 'open' %}selected{% endif %}>مفتوح</option>
+          <option value="closed" {% if filters.status == 'closed' %}selected{% endif %}>مغلق</option>
+        </select>
+      </div>
+
+      <!-- Overdue Checkbox & Submit -->
+      <div class="flex items-end gap-3">
+        <label class="flex items-center gap-2 cursor-pointer pb-2 text-xs text-amber-300">
+          <input type="checkbox" name="overdue" value="true" {% if filters.overdue %}checked{% endif %} class="rounded bg-gray-900 border-gray-700 text-indigo-600 focus:ring-0">
+          <span>متأخر (&gt;١٢س)</span>
+        </label>
+        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 px-3 rounded-lg text-sm transition">
+          {{ t("admin.filter.submit") }}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <!-- Showing count -->
+  <div class="flex items-center justify-between text-xs text-gray-400">
+    {% if total > 0 %}
+    {% set from_item = (page - 1) * size + 1 %}
+    {% set to_item = page * size if (page * size) < total else total %}
+    <span>{{ t("admin.pagination.showing") | replace("{from}", from_item | to_arabic_indic) | replace("{to}", to_item | to_arabic_indic) | replace("{total}", total | to_arabic_indic) }}</span>
+    {% else %}
+    <span>{{ t("admin.table.no_results") }}</span>
+    {% endif %}
+  </div>
+
+  <!-- Shifts Table -->
+  <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-right text-sm">
+        <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
+          <tr>
+            <th class="p-3">رقم الشيفت</th>
+            <th class="p-3">العامل</th>
+            <th class="p-3">البوابة</th>
+            <th class="p-3">البداية</th>
+            <th class="p-3">النهاية</th>
+            <th class="p-3">الإيراد المحسوب</th>
+            <th class="p-3">النقدية عند الإغلاق</th>
+            <th class="p-3">الفارق</th>
+            <th class="p-3">الحالة</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-700/60">
+          {% for s in shifts %}
+          {% set computed = session_totals.get(s.id, 0) %}
+          {% set discrepancy = (s.closing_cash_egp - computed) if s.closing_cash_egp is not none else None %}
+          <tr onclick="window.location.href='/ui/admin/shifts/{{ s.id }}'" class="cursor-pointer hover:bg-gray-700/40 transition">
+            <td class="p-3 font-mono font-medium text-white">#{{ s.id | to_arabic_indic }}</td>
+            <td class="p-3 text-gray-200">{{ operator_names.get(s.operator_id, "—") }}</td>
+            <td class="p-3 text-gray-300">بوابة {{ s.gate_number | to_arabic_indic }}</td>
+            <td class="p-3 text-gray-400 text-xs">{{ s.started_at | format_datetime }}</td>
+            <td class="p-3 text-gray-400 text-xs">{{ s.ended_at | format_datetime if s.ended_at else "مفتوح" }}</td>
+            <td class="p-3 font-semibold text-emerald-400">{{ computed | format_egp }}</td>
+            <td class="p-3 font-semibold text-white">{{ s.closing_cash_egp | format_egp if s.closing_cash_egp is not none else "—" }}</td>
+            <td class="p-3 font-semibold {{ discrepancy | discrepancy_class(computed) }}">
+              {{ discrepancy | format_egp if discrepancy is not none else "—" }}
+            </td>
+            <td class="p-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50' if not s.ended_at else 'bg-gray-700 text-gray-300' }}">
+                {{ s.ended_at | shift_status_label }}
+              </span>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="p-6 text-center text-gray-400">{{ t("admin.table.no_results") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if total > size %}
+    {% set total_pages = ((total - 1) // size) + 1 %}
+    <div class="p-4 border-t border-gray-700 flex items-center justify-between text-sm">
+      <div>
+        {% if page > 1 %}
+        <a href="/ui/admin/shifts?page={{ page - 1 }}&size={{ size }}{% if filters.gate_number %}&gate_number={{ filters.gate_number }}{% endif %}{% if filters.operator_id %}&operator_id={{ filters.operator_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}{% if filters.overdue %}&overdue=true{% endif %}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition">السابق</a>
+        {% endif %}
+      </div>
+      <div class="text-gray-400">
+        صفحة {{ page | to_arabic_indic }} من {{ total_pages | to_arabic_indic }}
+      </div>
+      <div>
+        {% if page < total_pages %}
+        <a href="/ui/admin/shifts?page={{ page + 1 }}&size={{ size }}{% if filters.gate_number %}&gate_number={{ filters.gate_number }}{% endif %}{% if filters.operator_id %}&operator_id={{ filters.operator_id }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.start_date %}&start_date={{ filters.start_date }}{% endif %}{% if filters.end_date %}&end_date={{ filters.end_date }}{% endif %}{% if filters.overdue %}&overdue=true{% endif %}" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg transition">التالي</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
