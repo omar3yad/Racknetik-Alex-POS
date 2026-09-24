@@ -1001,19 +1001,19 @@ FROM shifts s
 
 ## Group 7 — Admin API Routes
 
-- [ ] **Task 7.1:** Create `routes/admin_api.py`. Define `router = APIRouter(
+- [x] **Task 7.1:** Create `routes/admin_api.py`. Define `router = APIRouter(
   prefix="/api/v1/admin", tags=["admin"])`. All routes in this file use
   `Depends(require_admin)`. Add `GET /stats/live` endpoint:
   - Instantiates `ReportRepository(db)` and `ReportService(db, repo)`.
   - Calls `await report_service.get_live_stats()`.
   - Returns `{"data": LiveStatsResponse(...).model_dump()}` with status `200`.
 
-- [ ] **Task 7.2:** In `routes/admin_api.py`, add `GET /stats/gates` endpoint:
+- [x] **Task 7.2:** In `routes/admin_api.py`, add `GET /stats/gates` endpoint:
   - Calls `await report_service.get_gate_panel()`.
   - Returns `{"data": [GateStatusResponse(...).model_dump() for g in gates]}`
     with status `200`.
 
-- [ ] **Task 7.3:** In `routes/admin_api.py`, add `GET /sessions` endpoint:
+- [x] **Task 7.3:** In `routes/admin_api.py`, add `GET /sessions` endpoint:
   - Query params parsed into `ReportFilters` using `Depends` with a
     `get_report_filters` dependency function defined in this file. The
     dependency reads individual query params and constructs `ReportFilters`,
@@ -1024,7 +1024,7 @@ FROM shifts s
   - Calls `report_service.get_sessions_filtered(filters, page, size)`.
   - Returns `PaginatedResponse[SessionResponse]`.
 
-- [ ] **Task 7.4:** In `routes/admin_api.py`, add `GET /sessions/{session_id}`
+- [x] **Task 7.4:** In `routes/admin_api.py`, add `GET /sessions/{session_id}`
   endpoint:
   - Fetches session via `ParkingSessionRepository.get_by_id`. Raises
     `HTTPException(404, code="SESSION_NOT_FOUND")` if absent.
@@ -1032,7 +1032,7 @@ FROM shifts s
     `entity_id=session_id`, ordered by `created_at ASC`, via a direct query.
   - Builds and returns `{"data": AdminSessionDetail(...).model_dump()}`.
 
-- [ ] **Task 7.5:** In `routes/admin_api.py`, add
+- [x] **Task 7.5:** In `routes/admin_api.py`, add
   `GET /sessions/export/csv` endpoint:
   - Same filter parsing as Task 7.3 (reuse `get_report_filters` dependency).
   - Fetches all operator IDs from sessions, loads their names in one query.
@@ -1043,7 +1043,7 @@ FROM shifts s
     headers={"Content-Disposition":
     f'attachment; filename="pgms_sessions_{cairo_date_str(utcnow())}.csv"})`.
 
-- [ ] **Task 7.6:** In `routes/admin_api.py`, add `GET /shifts` endpoint:
+- [x] **Task 7.6:** In `routes/admin_api.py`, add `GET /shifts` endpoint:
   - Query params parsed into `ShiftFilters` using a `get_shift_filters`
     dependency function. Raises `HTTPException(422, code="INVALID_DATE_RANGE")`
     on date range errors.
@@ -1051,7 +1051,7 @@ FROM shifts s
   - Fetches session totals via `get_shift_session_totals(shift_ids)`.
   - Returns `PaginatedResponse[ShiftResponse]`.
 
-- [ ] **Task 7.7:** In `routes/admin_api.py`, add `GET /shifts/{shift_id}`
+- [x] **Task 7.7:** In `routes/admin_api.py`, add `GET /shifts/{shift_id}`
   endpoint:
   - Fetches shift by ID. Raises `HTTPException(404)` if absent.
   - Calls `ShiftService._compute_summary(shift, shift.closing_cash_egp)`.
@@ -1061,7 +1061,7 @@ FROM shifts s
     ShiftSummaryResponse(...), "sessions": [SessionResponse(...)],
     "session_total": total}}`.
 
-- [ ] **Task 7.8:** In `routes/admin_api.py`, add
+- [x] **Task 7.8:** In `routes/admin_api.py`, add
   `GET /shifts/{shift_id}/export/csv` endpoint:
   - Fetches all sessions for the shift via async iterator (chunk size 500).
   - Fetches operator names. Fetches session totals via
@@ -1070,7 +1070,7 @@ FROM shifts s
   - Returns `StreamingResponse` with filename
     `pgms_shift_{shift_id}_{cairo_date}.csv`.
 
-- [ ] **Task 7.9:** In `routes/admin_api.py`, add
+- [x] **Task 7.9:** In `routes/admin_api.py`, add
   `PATCH /shifts/{shift_id}/force-close` endpoint:
   - Body: `ForceCloseShiftRequest` (optional).
   - Calls `ShiftService.force_close_shift(shift_id, current_user.id,
@@ -1079,7 +1079,7 @@ FROM shifts s
     code `"SHIFT_ALREADY_CLOSED"`.
   - Returns `{"data": ShiftSummaryResponse(...).model_dump()}`.
 
-- [ ] **Task 7.10:** In `routes/admin_api.py`, add `GET /reports/revenue`
+- [x] **Task 7.10:** In `routes/admin_api.py`, add `GET /reports/revenue`
   endpoint:
   - Same filter parsing as Task 7.3.
   - Calls four service methods concurrently via `asyncio.gather`:
@@ -1097,13 +1097,13 @@ FROM shifts s
     }
 ```
 
-- [ ] **Task 7.11:** In `routes/admin_api.py`, add `GET /reports/export/csv`
+- [x] **Task 7.11:** In `routes/admin_api.py`, add `GET /reports/export/csv`
   endpoint:
   - Same filter + streaming pattern as Task 7.5.
   - Filename: `pgms_report_{start}_{end}.csv` where `start` and `end` are
     Cairo date strings from the filter (or `"all"` if not provided).
 
-- [ ] **Task 7.12:** Register `admin_api.router` in `main.py`. Import `router`
+- [x] **Task 7.12:** Register `admin_api.router` in `main.py`. Import `router`
   from `routes/admin_api.py` as `admin_api_router`. Add
   `app.include_router(admin_api_router)` after existing routers. No other
   changes to `main.py`.
