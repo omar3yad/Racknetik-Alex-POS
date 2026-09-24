@@ -637,7 +637,7 @@ FROM shifts s
 
 ### 5a — Service Exceptions
 
-- [ ] **Task 5.1:** Open `services/exceptions.py`. Add the following new exception
+- [x] **Task 5.1:** Open `services/exceptions.py`. Add the following new exception
   classes (same pattern as existing ones — inherit from `Exception`, store
   `message`):
   - `ShiftAlreadyClosedError`
@@ -651,14 +651,14 @@ FROM shifts s
 
 ### 5b — ReportService
 
-- [ ] **Task 5.2:** Create `services/report_service.py`. Define a `ReportService`
+- [x] **Task 5.2:** Create `services/report_service.py`. Define a `ReportService`
   class with:
 ```python
   def __init__(self, db: AsyncSession, report_repo: ReportRepository)
 ```
   Store both as instance attributes. No logic in `__init__`.
 
-- [ ] **Task 5.3:** In `services/report_service.py`, add method:
+- [x] **Task 5.3:** In `services/report_service.py`, add method:
 ```python
   async def get_live_stats(self) -> LiveStatsResponse
 ```
@@ -677,7 +677,7 @@ FROM shifts s
   round(active * 100 / max(capacity, 1))`. Return `LiveStatsResponse(...)`.
   Import `asyncio` at the top of the file.
 
-- [ ] **Task 5.4:** In `services/report_service.py`, add method:
+- [x] **Task 5.4:** In `services/report_service.py`, add method:
 ```python
   async def get_gate_panel(self) -> list[GateStatusResponse]
 ```
@@ -686,7 +686,7 @@ FROM shifts s
   from the repo; if absent, create a `GateStatusResponse` with all fields
   `None`/`0`. Returns the list sorted by `gate_number` ascending.
 
-- [ ] **Task 5.5:** In `services/report_service.py`, add method:
+- [x] **Task 5.5:** In `services/report_service.py`, add method:
 ```python
   async def get_alert_counts(self) -> dict[str, int]
 ```
@@ -696,7 +696,7 @@ FROM shifts s
   Returns `{"long_stay": n, "overdue_shifts": n}`. On exception for either,
   uses `0`.
 
-- [ ] **Task 5.6:** In `services/report_service.py`, add method:
+- [x] **Task 5.6:** In `services/report_service.py`, add method:
 ```python
   async def get_revenue_summary(
       self, filters: ReportFilters
@@ -709,7 +709,7 @@ FROM shifts s
   `avg_revenue_piastres = total_revenue // max(total_sessions, 1)`. No floats.
   Returns `RevenueSummaryResponse(...)`.
 
-- [ ] **Task 5.7:** In `services/report_service.py`, add method:
+- [x] **Task 5.7:** In `services/report_service.py`, add method:
 ```python
   async def get_revenue_by_gate(
       self, filters: ReportFilters
@@ -718,7 +718,7 @@ FROM shifts s
   Resolves UTC boundaries. Calls `report_repo.get_revenue_by_gate(...)`.
   Returns `list[GateRevenueResponse]`.
 
-- [ ] **Task 5.8:** In `services/report_service.py`, add method:
+- [x] **Task 5.8:** In `services/report_service.py`, add method:
 ```python
   async def get_revenue_by_operator(
       self, filters: ReportFilters
@@ -727,7 +727,7 @@ FROM shifts s
   Resolves UTC boundaries. Calls `report_repo.get_revenue_by_operator(...)`.
   Returns `list[OperatorRevenueResponse]`.
 
-- [ ] **Task 5.9:** In `services/report_service.py`, add method:
+- [x] **Task 5.9:** In `services/report_service.py`, add method:
 ```python
   async def get_daily_revenue(
       self, filters: ReportFilters
@@ -741,7 +741,7 @@ FROM shifts s
   `DailyRevenueResponse(date_str=..., session_count=0, total_piastres=0)`.
   Returns the complete list ordered by `date_str` ascending.
 
-- [ ] **Task 5.10:** In `services/report_service.py`, add method:
+- [x] **Task 5.10:** In `services/report_service.py`, add method:
 ```python
   async def get_sessions_filtered(
       self,
@@ -755,7 +755,7 @@ FROM shifts s
 
 ### 5c — Admin Shift Service Extension
 
-- [ ] **Task 5.11:** Open `services/shift_service.py`. Add a new method to
+- [x] **Task 5.11:** Open `services/shift_service.py`. Add a new method to
   `ShiftService`:
 ```python
   async def force_close_shift(
@@ -791,7 +791,7 @@ FROM shifts s
 
 ### 5d — Admin Pricing Service Extension
 
-- [ ] **Task 5.12:** Open `services/pricing_service.py`. Add method to
+- [x] **Task 5.12:** Open `services/pricing_service.py`. Add method to
   `PricingService`:
 ```python
   async def create_rule(
@@ -817,7 +817,7 @@ FROM shifts s
   5. Call `audit_service.log(...)` with action `"RATE_CREATED"`.
   6. Return the rule.
 
-- [ ] **Task 5.13:** Open `repositories/rate_repo.py`. Add method to
+- [x] **Task 5.13:** Open `repositories/rate_repo.py`. Add method to
   `PricingRuleRepository`:
 ```python
   async def get_by_label(self, label: str) -> PricingRule | None
@@ -825,12 +825,12 @@ FROM shifts s
   `SELECT * FROM pricing_rules WHERE label = :label LIMIT 1`. Returns the rule
   or `None`. Update `__all__`.
 
-- [ ] **Task 5.14:** Update `schemas/pricing_rule.py`. Modify `PricingRuleCreate`
+- [x] **Task 5.14:** Update `schemas/pricing_rule.py`. Modify `PricingRuleCreate`
   to accept EGP float inputs and convert to piastres in validators:
   - Change `rate_per_hour: int` → `rate_per_hour_egp: float = Field(ge=0)`.
   - Change `minimum_charge: int` → `minimum_charge_egp: float = Field(ge=0)`.
   - Change `lost_card_penalty: int` → `lost_card_penalty_egp: float =
-    Field(ge=0)`.
+     Field(ge=0)`.
   - Add computed properties (or a `model_validator(mode="after")`) that sets:
     `rate_per_hour: int = round(rate_per_hour_egp * 100)`,
     `minimum_charge: int = round(minimum_charge_egp * 100)`,
@@ -840,7 +840,7 @@ FROM shifts s
 
 ### 5e — Services `__init__.py`
 
-- [ ] **Task 5.15:** Update `services/__init__.py` to import and re-export
+- [x] **Task 5.15:** Update `services/__init__.py` to import and re-export
   `ReportService`. Rebuild `__all__`. Verify all six new exceptions from
   Task 5.1 are exported.
 
