@@ -38,3 +38,17 @@ def test_cairo_date_str() -> None:
 
 def test_utc_to_cairo_adds_two_hours() -> None:
     assert utc_to_cairo(datetime(2024, 8, 15, 10, 0, 0)) == datetime(2024, 8, 15, 12, 0, 0)
+
+
+def test_cairo_date_to_utc_end_is_next_midnight() -> None:
+    assert cairo_date_to_utc_end(date(2024, 8, 15)) == cairo_date_to_utc_start(date(2024, 8, 16))
+
+
+def test_utc_to_cairo_midnight_crossing() -> None:
+    # UTC 2024-08-15 23:30 -> Cairo 2024-08-16 01:30 (next calendar day)
+    assert utc_to_cairo(datetime(2024, 8, 15, 23, 30)) == datetime(2024, 8, 16, 1, 30)
+
+
+def test_cairo_date_str_midnight_utc() -> None:
+    # UTC 2024-08-15 22:00:00 -> Cairo 2024-08-16 00:00:00 -> "2024-08-16"
+    assert cairo_date_str(datetime(2024, 8, 15, 22, 0, 0)) == "2024-08-16"

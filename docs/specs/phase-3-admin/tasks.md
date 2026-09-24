@@ -1459,7 +1459,7 @@ FROM shifts s
 
 ### 9a — Cairo Time Utils Tests (extended)
 
-- [ ] **Task 9.1:** Open `tests/unit/test_time_utils.py` (created in Task 2.2).
+- [x] **Task 9.1:** Open `tests/unit/test_time_utils.py` (created in Task 2.2).
   Add the following tests:
   - `test_cairo_date_to_utc_end_is_next_midnight`: `cairo_date_to_utc_end(
     date(2024, 8, 15))` equals `cairo_date_to_utc_start(date(2024, 8, 16))`.
@@ -1469,7 +1469,7 @@ FROM shifts s
 
 ### 9b — ReportService Unit Tests
 
-- [ ] **Task 9.2:** Create `tests/unit/test_report_service.py`. Define a
+- [x] **Task 9.2:** Create `tests/unit/test_report_service.py`. Define a
   `MockReportRepo` class (plain Python, no DB) that returns hardcoded values
   for all repo methods. Instantiate
   `service = ReportService(db=None, report_repo=MockReportRepo())`.
@@ -1479,37 +1479,37 @@ FROM shifts s
   `stats.active_sessions == 3`, `stats.occupancy_pct == 30`,
   `stats.revenue_today_piastres == 5000`.
 
-- [ ] **Task 9.3:** Write test `test_get_live_stats_exception_fallback`: mock
+- [x] **Task 9.3:** Write test `test_get_live_stats_exception_fallback`: mock
   raises `Exception` for `count_open_shifts`. Asserts no exception propagates
   to the caller and `stats.open_shifts == 0`.
 
-- [ ] **Task 9.4:** Write test `test_get_daily_revenue_fills_missing_days`:
+- [x] **Task 9.4:** Write test `test_get_daily_revenue_fills_missing_days`:
   mock `get_daily_revenue_raw` returns only `[{"cairo_date": "2024-08-15",
   "session_count": 3, "total_piastres": 3000}]`. Call `get_daily_revenue`
   with `filters` spanning `2024-08-14` to `2024-08-16`. Asserts result has
   3 items. Asserts `2024-08-14` has `session_count=0` and
   `total_piastres=0`. Asserts `2024-08-15` has correct values.
 
-- [ ] **Task 9.5:** Write test `test_revenue_summary_no_floats`: mock returns
+- [x] **Task 9.5:** Write test `test_revenue_summary_no_floats`: mock returns
   `total_sessions=3`, `total_revenue=7777`, `total_duration=100`. Asserts all
   fields of `RevenueSummaryResponse` are of type `int` (use `isinstance`).
 
-- [ ] **Task 9.6:** Write test `test_revenue_summary_zero_sessions_no_div_error`:
+- [x] **Task 9.6:** Write test `test_revenue_summary_zero_sessions_no_div_error`:
   mock returns `total_sessions=0`, `total_revenue=0`, `total_duration=0`.
   Asserts `avg_duration_minutes=0` and `avg_revenue_piastres=0` (no
   `ZeroDivisionError`).
 
-- [ ] **Task 9.7:** Write test `test_gate_panel_fills_missing_gates`: mock
+- [x] **Task 9.7:** Write test `test_gate_panel_fills_missing_gates`: mock
   `get_gate_panel` returns data for gates 1, 3, 5 only. Asserts returned list
   has exactly 5 items. Asserts gates 2 and 4 have `operator_name=None` and
   `active_sessions=0`.
 
-- [ ] **Task 9.8:** Write test `test_get_alert_counts_both_succeed`: mock returns
+- [x] **Task 9.8:** Write test `test_get_alert_counts_both_succeed`: mock returns
   `long_stay=2`, `overdue=1`. Asserts `{"long_stay": 2, "overdue_shifts": 1}`.
 
 ### 9c — ReportFilters Validation Tests
 
-- [ ] **Task 9.9:** Create `tests/unit/test_report_filters.py`. Write tests:
+- [x] **Task 9.9:** Create `tests/unit/test_report_filters.py`. Write tests:
   - `test_valid_filters`: constructs `ReportFilters(start_date=date(2024,1,1),
     end_date=date(2024,1,31))`. Asserts no exception.
   - `test_invalid_date_range_raises`: `start_date=date(2024,2,1),
@@ -1520,7 +1520,7 @@ FROM shifts s
   - `test_card_code_too_long`: `card_code="A" * 51`. Asserts `ValidationError`.
   - `test_all_none_is_valid`: `ReportFilters()` with no params. Asserts valid.
 
-- [ ] **Task 9.10:** Create `tests/unit/test_shift_filters.py`. Write tests:
+- [x] **Task 9.10:** Create `tests/unit/test_shift_filters.py`. Write tests:
   - `test_valid_shift_filters`: `ShiftFilters(status="open", gate_number=3)`.
     Asserts valid.
   - `test_invalid_status`: `ShiftFilters(status="pending")`. Asserts
@@ -1530,7 +1530,7 @@ FROM shifts s
 
 ### 9d — Jinja2 Filter Unit Tests
 
-- [ ] **Task 9.11:** Create `tests/unit/test_admin_filters.py`. Write tests for
+- [x] **Task 9.11:** Create `tests/unit/test_admin_filters.py`. Write tests for
   `discrepancy_class_filter`:
   - `test_zero_discrepancy` → `"text-green-600"`.
   - `test_none_discrepancy` → `"text-gray-400"`.
@@ -1541,26 +1541,26 @@ FROM shifts s
   - `test_zero_computed_total_no_div_error`: `discrepancy=100, computed_total=0`
     → `"text-red-600"` (not a ZeroDivisionError).
 
-- [ ] **Task 9.12:** In `tests/unit/test_admin_filters.py`, write tests for
+- [x] **Task 9.12:** In `tests/unit/test_admin_filters.py`, write tests for
   `session_status_label_filter`:
   - `"ACTIVE"` → `"داخل"`.
   - `"COMPLETED"` → `"خرج"`.
   - `"LOST_CARD"` → `"كرت مفقود"`.
   - `"UNKNOWN"` → `"UNKNOWN"` (passthrough).
 
-- [ ] **Task 9.13:** In `tests/unit/test_admin_filters.py`, write tests for
+- [x] **Task 9.13:** In `tests/unit/test_admin_filters.py`, write tests for
   `shift_status_label_filter`:
   - `None` → `"مفتوح"`.
   - `datetime(2024, 1, 1)` → `"مغلق"`.
 
-- [ ] **Task 9.14:** In `tests/unit/test_admin_filters.py`, write tests for
+- [x] **Task 9.14:** In `tests/unit/test_admin_filters.py`, write tests for
   `cairo_date_filter`:
   - `None` → `"—"`.
   - `datetime(2024, 8, 15, 23, 0, 0)` (UTC) → `"2024-08-16"` (Cairo next day).
 
 ### 9e — PricingRuleCreate Schema Tests
 
-- [ ] **Task 9.15:** Create `tests/unit/test_pricing_rule_schema.py`. Write tests:
+- [x] **Task 9.15:** Create `tests/unit/test_pricing_rule_schema.py`. Write tests:
   - `test_egp_converted_to_piastres`: `PricingRuleCreate(
     rate_per_hour_egp=10.0, ...)`. Asserts `rate_per_hour == 1000`.
   - `test_fractional_egp_rounded`: `rate_per_hour_egp=5.555`. Asserts
@@ -1574,14 +1574,14 @@ FROM shifts s
 
 ### 9f — CSV Export Unit Tests
 
-- [ ] **Task 9.16:** Create `tests/unit/test_csv_export.py`. Write tests for
+- [x] **Task 9.16:** Create `tests/unit/test_csv_export.py`. Write tests for
   `_piastres_to_egp_str`:
   - `None` → `""`.
   - `0` → `"0.00"`.
   - `2550` → `"25.50"`.
   - `100` → `"1.00"`.
 
-- [ ] **Task 9.17:** In `tests/unit/test_csv_export.py`, write an async test
+- [x] **Task 9.17:** In `tests/unit/test_csv_export.py`, write an async test
   for `generate_sessions_csv`:
 ```python
   async def test_csv_starts_with_bom():
@@ -1590,13 +1590,13 @@ FROM shifts s
   Collects all yielded strings from the generator. Asserts the first yielded
   string equals `"\ufeff"`.
 
-- [ ] **Task 9.18:** In `tests/unit/test_csv_export.py`, write test:
+- [x] **Task 9.18:** In `tests/unit/test_csv_export.py`, write test:
 ```python
   async def test_csv_header_row_is_arabic():
 ```
   Collects CSV output. Asserts the second yielded chunk contains `"رقم الجلسة"`.
 
-- [ ] **Task 9.19:** In `tests/unit/test_csv_export.py`, write test:
+- [x] **Task 9.19:** In `tests/unit/test_csv_export.py`, write test:
 ```python
   async def test_none_values_render_as_empty_string():
 ```
