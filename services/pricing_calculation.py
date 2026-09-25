@@ -6,6 +6,8 @@ class PriceCalculation:
     billable_minutes: int
     billable_hours: int
     rate_per_hour: int
+    first_hour_charge: int
+    subsequent_hour_charge: int
     grace_period_mins: int
     minimum_charge: int
     base_amount: int

@@ -32,7 +32,13 @@ class PricingService:
         rule: PricingRule,
         exit_time: datetime,
     ) -> PriceCalculation:
-        """Synchronously and purely calculates pricing for a parking session."""
+        """Synchronously and purely calculates pricing for a parking session.
+
+        Tiered pricing logic:
+        - If first_hour_charge > 0: first hour costs first_hour_charge,
+          each additional hour costs subsequent_hour_charge.
+        - Otherwise falls back to flat rate_per_hour × billable_hours.
+        """
         # Ensure timezone-naive datetimes for calculation
         entry = session.entry_time
         if entry.tzinfo is not None:
@@ -46,6 +52,9 @@ class PricingService:
         if duration_minutes < 0:
             duration_minutes = 0
 
+        first_hour = getattr(rule, "first_hour_charge", 0) or 0
+        subsequent = getattr(rule, "subsequent_hour_charge", 0) or 0
+
         if duration_minutes <= rule.grace_period_mins:
             is_grace_period = True
             billable_minutes = 0
@@ -55,7 +64,17 @@ class PricingService:
             is_grace_period = False
             billable_minutes = duration_minutes - rule.grace_period_mins
             billable_hours = math.ceil(billable_minutes / 60)
-            raw = billable_hours * rule.rate_per_hour
+
+            if first_hour > 0:
+                # Tiered: 1st hour = first_hour_charge, each extra = subsequent_hour_charge
+                if billable_hours <= 1:
+                    raw = first_hour
+                else:
+                    raw = first_hour + (billable_hours - 1) * subsequent
+            else:
+                # Flat rate fallback
+                raw = billable_hours * rule.rate_per_hour
+
             base_amount = max(raw, rule.minimum_charge)
 
         penalty_amount = 0
@@ -66,6 +85,8 @@ class PricingService:
             billable_minutes=billable_minutes,
             billable_hours=billable_hours,
             rate_per_hour=rule.rate_per_hour,
+            first_hour_charge=first_hour,
+            subsequent_hour_charge=subsequent,
             grace_period_mins=rule.grace_period_mins,
             minimum_charge=rule.minimum_charge,
             base_amount=base_amount,
@@ -75,6 +96,7 @@ class PricingService:
             is_grace_period=is_grace_period,
             is_lost_card=False,
         )
+
 
     def calculate_lost_card(
         self,
@@ -89,6 +111,8 @@ class PricingService:
             billable_minutes=base_calc.billable_minutes,
             billable_hours=base_calc.billable_hours,
             rate_per_hour=base_calc.rate_per_hour,
+            first_hour_charge=base_calc.first_hour_charge,
+            subsequent_hour_charge=base_calc.subsequent_hour_charge,
             grace_period_mins=base_calc.grace_period_mins,
             minimum_charge=base_calc.minimum_charge,
             base_amount=base_calc.base_amount,

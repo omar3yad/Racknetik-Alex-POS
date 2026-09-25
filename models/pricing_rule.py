@@ -10,6 +10,8 @@ class PricingRule(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     label: Mapped[str] = mapped_column(String(100), nullable=False)
     rate_per_hour: Mapped[int] = mapped_column(nullable=False)
+    first_hour_charge: Mapped[int] = mapped_column(nullable=False, server_default="0")
+    subsequent_hour_charge: Mapped[int] = mapped_column(nullable=False, server_default="0")
     minimum_charge: Mapped[int] = mapped_column(nullable=False, server_default="0")
     grace_period_mins: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default="15")
     lost_card_penalty: Mapped[int] = mapped_column(nullable=False, server_default="0")
@@ -17,6 +19,7 @@ class PricingRule(Base, TimestampMixin):
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     effective_from: Mapped[datetime] = mapped_column(nullable=False)
     effective_until: Mapped[datetime | None] = mapped_column(nullable=True)
+
 
 __all__ = ["PricingRule"]
 
