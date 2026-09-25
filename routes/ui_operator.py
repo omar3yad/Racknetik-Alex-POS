@@ -196,7 +196,7 @@ async def dashboard_page(
     shift = await shift_service.get_active_shift(current_user.id)
     sessions, total = [], 0
     if shift:
-        sessions, total = await session_repo.get_by_shift(shift.id, page=1, size=10)
+        sessions, total = await session_repo.get_by_shift_combined(shift.id, page=1, size=10)
 
     active_rule = await pricing_repo.get_active()
     templates = request.app.state.templates

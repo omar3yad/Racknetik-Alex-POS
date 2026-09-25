@@ -125,16 +125,17 @@ class ShiftService:
         checks out the car is credited for the revenue, not the one who
         checked it in.
         """
-        # Sessions that were ENTERED in this shift (for occupancy/count stats)
+        # Sessions that were ENTERED in this shift and still ACTIVE
         entry_result = await self.db.execute(
-            select(ParkingSession).where(ParkingSession.shift_id == shift.id)
+            select(ParkingSession).where(
+                ParkingSession.shift_id == shift.id,
+                ParkingSession.status == SessionStatus.ACTIVE,
+            )
         )
-        sessions = entry_result.scalars().all()
+        active_sessions_list = entry_result.scalars().all()
+        active_sessions = len(active_sessions_list)
 
-        total_sessions = len(sessions)
-        active_sessions = sum(1 for s in sessions if s.status == SessionStatus.ACTIVE)
-
-        # Revenue is based on sessions that were EXITED in this shift (exit_shift_id)
+        # Sessions that were EXITED in this shift (revenue sessions)
         exit_result = await self.db.execute(
             select(ParkingSession).where(
                 ParkingSession.exit_shift_id == shift.id,
@@ -147,6 +148,9 @@ class ShiftService:
 
         completed_sessions = sum(1 for s in exited_sessions if s.status == SessionStatus.COMPLETED)
         lost_card_sessions = sum(1 for s in exited_sessions if s.status == SessionStatus.LOST_CARD)
+
+        # total = sessions exited in this shift + still-active sessions entered in this shift
+        total_sessions = len(exited_sessions) + active_sessions
 
         computed_total = sum(
             s.amount_charged for s in exited_sessions
