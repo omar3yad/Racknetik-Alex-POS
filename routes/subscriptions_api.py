@@ -156,7 +156,7 @@ async def deactivate_plan(
 @router.post("/subscribers", status_code=status.HTTP_201_CREATED)
 async def create_subscriber(
     data: SubscriberCreate,
-    current_user: User = Depends(require_any_role),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     subscriber_repo = SubscriberRepository(db)
@@ -273,7 +273,7 @@ async def update_subscriber(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_subscription(
     data: SubscriptionCreate,
-    current_user: User = Depends(require_any_role),
+    current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
     sub_repo = SubscriptionRepository(db)

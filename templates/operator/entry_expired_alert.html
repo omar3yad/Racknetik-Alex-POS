@@ -55,20 +55,16 @@
         </div>
     </div>
 
+    <!-- Notice: Renewal via Admin -->
+    <div class="w-full bg-amber-950/60 border border-amber-500/40 rounded-xl p-3.5 mb-2 text-center text-amber-200">
+        <p class="font-bold text-sm">⚠️ تجديد الاشتراك متاح فقط من خلال إدارة النظام</p>
+        <p class="text-xs text-amber-300/80 mt-1">يجب على المشترك مراجعة الإدارة لتجديد الاشتراك، أو المتابعة الآن كدخول عادي (محاسبة بالساعة).</p>
+    </div>
+
     <!-- Action Buttons -->
     <div class="w-full flex flex-col gap-3">
         
-        <!-- Option 1: Renew Now -->
-        <a href="/ui/operator/subscriptions/new?card_code={{ card.card_code }}&plate_number={{ subscription.plate_number }}&full_name={{ subscriber.full_name }}&phone_number={{ subscriber.phone_number or '' }}"
-           id="btn-renew-subscription"
-           class="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg transition duration-200 py-4 text-lg font-bold min-h-[56px] active:scale-[0.99]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-            </svg>
-            🔄 تجديد الاشتراك وتحصيل المبلغ الآن
-        </a>
-
-        <!-- Option 2: Enter as Normal Paid Session -->
+        <!-- Option: Enter as Normal Paid Session -->
         <form method="POST" action="/ui/operator/entry" class="w-full m-0">
             <input type="hidden" name="card_code" value="{{ card.card_code }}">
             <input type="hidden" name="plate_number" value="{{ subscription.plate_number }}">
@@ -76,7 +72,7 @@
             
             <button type="submit" 
                     id="btn-continue-regular"
-                    class="w-full flex items-center justify-center gap-2 bg-gray-800 hover:bg-gray-700 text-amber-300 border-2 border-amber-500/40 rounded-xl shadow-md transition duration-200 py-3.5 text-base font-bold min-h-[52px] active:scale-[0.99]">
+                    class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition duration-200 py-3.5 text-base font-bold min-h-[52px] active:scale-[0.99]">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>

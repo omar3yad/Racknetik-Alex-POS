@@ -83,9 +83,9 @@ async def seed_default_pricing_rule(db, admin_user_id: int) -> dict:
 
     rule = PricingRule(
         label=label,
-        rate_per_hour=500,  # 5 EGP (stored as piasters/cents = 500)
+        rate_per_hour=1000,  # 10 EGP (stored as piasters/cents = 1000)
         minimum_charge=0,
-        grace_period_mins=15,
+        grace_period_mins=5,
         is_active=True,
         effective_from=datetime.now(timezone.utc).replace(tzinfo=None),
         effective_until=None,
