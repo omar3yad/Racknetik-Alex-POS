@@ -65,7 +65,8 @@ class AdminShiftRepository:
         shift_ids: list[int],
     ) -> dict[int, int]:
         """Calculates total revenue (in piastres) for COMPLETED and
-        LOST_CARD sessions of given shifts.
+        LOST_CARD sessions that were EXITED in the given shifts (exit_shift_id).
+        Revenue is credited to the operator who checked the car OUT, not in.
         """
         if not shift_ids:
             return {}
@@ -73,16 +74,16 @@ class AdminShiftRepository:
         result_map = {sid: 0 for sid in shift_ids}
         q = (
             select(
-                ParkingSession.shift_id,
+                ParkingSession.exit_shift_id,
                 func.coalesce(func.sum(ParkingSession.amount_charged), 0),
             )
             .where(
-                ParkingSession.shift_id.in_(shift_ids),
+                ParkingSession.exit_shift_id.in_(shift_ids),
                 ParkingSession.status.in_(
                     [SessionStatus.COMPLETED, SessionStatus.LOST_CARD]
                 ),
             )
-            .group_by(ParkingSession.shift_id)
+            .group_by(ParkingSession.exit_shift_id)
         )
         rows = (await self.db.execute(q)).all()
         for sid, total in rows:
@@ -93,17 +94,41 @@ class AdminShiftRepository:
         self,
         shift_id: int,
     ) -> dict[str, int]:
-        """Returns session counts grouped by status for a single shift."""
+        """Returns session counts grouped by status for a single shift.
+
+        ACTIVE count is based on entry shift (shift_id).
+        COMPLETED and LOST_CARD counts are based on exit shift (exit_shift_id)
+        so the operator who checked the car out is credited.
+        """
         counts = {"ACTIVE": 0, "COMPLETED": 0, "LOST_CARD": 0}
-        q = (
+
+        # Active sessions: entered in this shift and not yet exited
+        active_q = (
+            select(func.count(ParkingSession.id))
+            .where(
+                ParkingSession.shift_id == shift_id,
+                ParkingSession.status == SessionStatus.ACTIVE,
+            )
+        )
+        active_count = (await self.db.execute(active_q)).scalar_one_or_none() or 0
+        counts["ACTIVE"] = int(active_count)
+
+        # Completed/lost-card: exited in this shift
+        exit_q = (
             select(
                 ParkingSession.status,
                 func.count(ParkingSession.id),
             )
-            .where(ParkingSession.shift_id == shift_id)
+            .where(
+                ParkingSession.exit_shift_id == shift_id,
+                ParkingSession.status.in_([
+                    SessionStatus.COMPLETED,
+                    SessionStatus.LOST_CARD,
+                ]),
+            )
             .group_by(ParkingSession.status)
         )
-        rows = (await self.db.execute(q)).all()
+        rows = (await self.db.execute(exit_q)).all()
         for status_val, count in rows:
             key = status_val.value if hasattr(status_val, "value") else str(status_val)
             counts[key] = int(count or 0)

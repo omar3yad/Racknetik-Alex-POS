@@ -118,20 +118,39 @@ class ShiftService:
     async def _compute_summary(
         self, shift: Shift, closing_cash_piastres: int | None
     ) -> ShiftSummary:
-        """Helper that computes the financial and session statistics for the shift."""
-        result = await self.db.execute(
+        """Helper that computes the financial and session statistics for the shift.
+
+        Session counts (entered/active) are based on shift_id (entry shift).
+        Revenue is based on exit_shift_id (exit shift) — the operator who
+        checks out the car is credited for the revenue, not the one who
+        checked it in.
+        """
+        # Sessions that were ENTERED in this shift (for occupancy/count stats)
+        entry_result = await self.db.execute(
             select(ParkingSession).where(ParkingSession.shift_id == shift.id)
         )
-        sessions = result.scalars().all()
+        sessions = entry_result.scalars().all()
 
         total_sessions = len(sessions)
-        completed_sessions = sum(1 for s in sessions if s.status == SessionStatus.COMPLETED)
-        lost_card_sessions = sum(1 for s in sessions if s.status == SessionStatus.LOST_CARD)
         active_sessions = sum(1 for s in sessions if s.status == SessionStatus.ACTIVE)
 
+        # Revenue is based on sessions that were EXITED in this shift (exit_shift_id)
+        exit_result = await self.db.execute(
+            select(ParkingSession).where(
+                ParkingSession.exit_shift_id == shift.id,
+                ParkingSession.status.in_(
+                    [SessionStatus.COMPLETED, SessionStatus.LOST_CARD]
+                ),
+            )
+        )
+        exited_sessions = exit_result.scalars().all()
+
+        completed_sessions = sum(1 for s in exited_sessions if s.status == SessionStatus.COMPLETED)
+        lost_card_sessions = sum(1 for s in exited_sessions if s.status == SessionStatus.LOST_CARD)
+
         computed_total = sum(
-            s.amount_charged for s in sessions
-            if s.status in (SessionStatus.COMPLETED, SessionStatus.LOST_CARD) and s.amount_charged is not None
+            s.amount_charged for s in exited_sessions
+            if s.amount_charged is not None
         )
 
         discrepancy = None
