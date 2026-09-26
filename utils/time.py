@@ -60,13 +60,13 @@ def cairo_date_str(dt: datetime) -> str:
 
 
 def cairo_date_str_full(dt: datetime | None) -> str:
-    """Converts a UTC datetime to a Cairo local datetime string in 12-hour format: YYYY-MM-DD hh:mm AM/PM (م/ص)."""
+    """Converts a UTC datetime to a Cairo local datetime string in 12-hour format: YYYY/MM/DD • hh:mm AM/PM (م/ص)."""
     if dt is None:
         return ""
     c_dt = utc_to_cairo(dt)
     time_part = c_dt.strftime("%I:%M")
     ampm = "م" if c_dt.hour >= 12 else "ص"
-    return f"{c_dt.strftime('%Y-%m-%d')} {time_part} {ampm}"
+    return f"\u200e{c_dt.strftime('%Y/%m/%d')} \u2022 \u200e{time_part} {ampm}"
 
 
 __all__ = [

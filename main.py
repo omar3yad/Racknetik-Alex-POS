@@ -176,3 +176,13 @@ app.include_router(ui_subscriptions_router)
 @app.get("/")
 async def root_redirect():
     return RedirectResponse("/ui/login", status_code=303)
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi.responses import FileResponse
+    return FileResponse("static/favicon.ico", media_type="image/x-icon")
+
+@app.get("/apple-touch-icon.png", include_in_schema=False)
+async def apple_touch_icon():
+    from fastapi.responses import FileResponse
+    return FileResponse("static/apple-touch-icon.png", media_type="image/png")

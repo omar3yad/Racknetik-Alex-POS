@@ -72,7 +72,7 @@ async def test_admin_dashboard_with_sub_stats(async_client: AsyncClient, db_sess
 
     response = await async_client.get("/ui/admin/dashboard")
     assert response.status_code == 200
-    assert "لوحة التحكم الرئيسية" in response.text
+    assert "لوحة التحكم" in response.text
     assert "اشتراكات تنتهي قريباً" in response.text
 
 

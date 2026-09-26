@@ -5,11 +5,14 @@
 {% block nav %}{% endblock %}
 
 {% block content %}
-<div class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-gray-950 via-gray-900 to-indigo-950">
-    <div class="w-full max-w-md bg-gray-800/80 border border-gray-700/60 backdrop-blur-md rounded-2xl shadow-xl p-8">
-        <h2 class="text-3xl font-extrabold text-center text-white mb-6 tracking-tight">
-            {{ t("login.title") if t is defined else "تسجيل الدخول" }}
-        </h2>
+<div class="flex-grow flex items-center justify-center p-4 bg-gradient-to-br from-gray-950 via-gray-900 to-cyan-950">
+    <div class="w-full max-w-md bg-gray-800/80 border border-gray-700/60 backdrop-blur-md rounded-2xl shadow-2xl p-8">
+        <!-- Logo & Brand -->
+        <div class="flex flex-col items-center mb-8">
+            <img src="/static/icons/icon-96x96.png" alt="garage4u" class="w-20 h-20 rounded-2xl shadow-xl shadow-cyan-500/30 mb-4">
+            <h1 class="text-3xl font-black text-cyan-400 tracking-tight">garage4u</h1>
+            <p class="text-gray-400 text-sm mt-1">نظام إدارة وقوف السيارات</p>
+        </div>
 
         {% if error %}
         <div class="bg-red-500/10 border border-red-500/30 text-red-200 rounded-lg p-4 mb-6 text-sm flex items-center gap-3">

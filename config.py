@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ENVIRONMENT: Literal["development", "staging", "production"]
     DEBUG: bool = False
-    APP_NAME: str = "PGMS"
+    APP_NAME: str = "garage4u"
     JWT_EXPIRE_HOURS: int = 8
     JWT_ALGORITHM: str = "HS256"
     DB_POOL_SIZE: int = 5

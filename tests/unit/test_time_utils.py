@@ -62,6 +62,6 @@ def test_cairo_date_to_utc_end_is_next_midnight() -> None:
 def test_cairo_date_str_full_12h() -> None:
     assert cairo_date_str_full(None) == ""
     # Summer: UTC 2024-08-15 21:30 -> Cairo 2024-08-16 00:30 (12:30 ص)
-    assert cairo_date_str_full(datetime(2024, 8, 15, 21, 30)) == "2024-08-16 12:30 ص"
+    assert cairo_date_str_full(datetime(2024, 8, 15, 21, 30)) == "\u200e2024/08/16 • \u200e12:30 ص"
     # Winter PM: UTC 2024-01-15 13:45 -> Cairo 2024-01-15 15:45 (03:45 م)
-    assert cairo_date_str_full(datetime(2024, 1, 15, 13, 45)) == "2024-01-15 03:45 م"
+    assert cairo_date_str_full(datetime(2024, 1, 15, 13, 45)) == "\u200e2024/01/15 • \u200e03:45 م"

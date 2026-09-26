@@ -282,6 +282,22 @@
     return String(num).replace(/[0-9]/g, d => map[d] || d);
   }
 
+  // Datetime formatter
+  function formatDateTime(dtStr) {
+    if (!dtStr) return '—';
+    const d = new Date(dtStr);
+    if (isNaN(d.getTime())) return dtStr;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'م' : 'ص';
+    hours = hours % 12 || 12;
+    const hh = String(hours).padStart(2, '0');
+    return `${year}/${month}/${day} • ${hh}:${minutes} ${ampm}`;
+  }
+
   // Toast helper
   function showToast(message, isSuccess = true) {
     const toast = document.getElementById('toast-msg');
@@ -536,6 +552,8 @@
       const firstHourFormatted = r.first_hour_charge > 0 ? `${firstHourVal} ج.م` : `${ratePerHourVal} ج.م`;
       const subsequentFormatted = r.first_hour_charge > 0 ? `${subsequentHourVal} ج.م` : `${ratePerHourVal} ج.م`;
 
+      const effFromFormatted = formatDateTime(r.effective_from);
+
       const tr = document.createElement('tr');
       tr.id = `rule-row-${r.id}`;
       tr.className = 'hover:bg-gray-700/30 transition bg-indigo-950/20';
@@ -547,7 +565,7 @@
         <td class="p-3 text-gray-300 cell-grace">${toArabic(r.grace_period_mins)} دقيقة</td>
         <td class="p-3 text-gray-300 cell-min-charge">${minChargeVal} ج.م</td>
         <td class="p-3 text-red-400 cell-lost-penalty">${lostPenaltyVal} ج.م</td>
-        <td class="p-3 text-gray-400 text-xs">${r.effective_from ? r.effective_from.replace('T', ' ').substring(0, 16) : '—'}</td>
+        <td class="p-3 text-gray-400 text-xs">${effFromFormatted}</td>
         <td class="p-3">
           <span class="rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-400">معطلة</span>
         </td>

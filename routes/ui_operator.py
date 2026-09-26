@@ -566,7 +566,7 @@ async def print_receipt_page(
             payment_method="اشتراك",
             is_lost_card=False,
             is_grace_period=False,
-            garage_name="جراج ركنتك",
+            garage_name="garage4u",
         )
 
         return templates.TemplateResponse(
@@ -623,7 +623,7 @@ async def print_receipt_page(
         payment_method="نقدي",
         is_lost_card=session.is_lost_card,
         is_grace_period=is_grace_period,
-        garage_name="جراج ركنتك",
+        garage_name="garage4u",
     )
 
     return templates.TemplateResponse(

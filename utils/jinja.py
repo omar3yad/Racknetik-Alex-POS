@@ -46,12 +46,12 @@ def discrepancy_class_filter(
 
 def format_cairo_12h(dt: datetime | date | None, fmt: str | None = None) -> str:
     """Format datetime into 12-hour Cairo local datetime string with Arabic AM/PM (ص / م).
-    Default format: 'YYYY-MM-DD hh:mm م/ص'.
+    Default format: 'YYYY/MM/DD • hh:mm ص/م'.
     """
     if dt is None:
         return "—"
     if isinstance(dt, date) and not isinstance(dt, datetime):
-        return dt.strftime(fmt or "%Y-%m-%d")
+        return dt.strftime(fmt or "%Y/%m/%d")
 
     c_dt = utc_to_cairo(dt)
     if fmt is not None:
@@ -60,7 +60,7 @@ def format_cairo_12h(dt: datetime | date | None, fmt: str | None = None) -> str:
 
     time_part = c_dt.strftime("%I:%M")
     ampm = "م" if c_dt.hour >= 12 else "ص"
-    return f"{c_dt.strftime('%Y-%m-%d')} {time_part} {ampm}"
+    return f"\u200e{c_dt.strftime('%Y/%m/%d')} \u2022 \u200e{time_part} {ampm}"
 
 
 def cairo_time_filter(dt: datetime | None) -> str:
@@ -70,7 +70,7 @@ def cairo_time_filter(dt: datetime | None) -> str:
     c_dt = utc_to_cairo(dt)
     time_part = c_dt.strftime("%I:%M")
     ampm = "م" if c_dt.hour >= 12 else "ص"
-    return f"{time_part} {ampm}"
+    return f"\u200e{time_part} {ampm}"
 
 
 def cairo_date_filter(dt: datetime | date | None, fmt: str = "%Y-%m-%d") -> str:

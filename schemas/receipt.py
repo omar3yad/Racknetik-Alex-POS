@@ -22,7 +22,7 @@ class ReceiptData(BaseModel):
     payment_method: str = "نقدي"
     is_lost_card: bool = False
     is_grace_period: bool = False
-    garage_name: str = "جراج ركنتك"
+    garage_name: str = "garage4u"
     subscriber_name: str | None = None
     subscription_end_date: date | None = None
 

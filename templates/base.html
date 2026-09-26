@@ -2,15 +2,37 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}نظام إدارة الجراج{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}garage4u{% endblock %}</title>
+
+    <!-- PWA & Favicon -->
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/icon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#06b6d4">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="garage4u">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="garage4u">
+    <meta name="description" content="نظام إدارة وقوف السيارات المتكامل">
+    <meta name="msapplication-TileColor" content="#0f172a">
+    <meta name="msapplication-TileImage" content="/static/icons/icon-144x144.png">
+
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
     {% block head %}{% endblock %}
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex flex-col font-sans">
     {% block nav %}
     <nav class="bg-gray-800 border-b border-gray-700 px-4 py-3 flex justify-between items-center">
-        <div class="text-xl font-bold tracking-wide text-indigo-400">نظام إدارة الجراج</div>
+        <div class="flex items-center gap-2">
+            <img src="/static/icons/icon-32x32.png" alt="garage4u" class="w-7 h-7 rounded-md">
+            <div class="text-xl font-bold tracking-wide text-cyan-400">garage4u</div>
+        </div>
         <div class="flex items-center gap-4">
             {% if user %}
             <span class="text-sm text-gray-300">{{ user.full_name }} ({{ user.role.value }})</span>
@@ -29,5 +51,16 @@
     </main>
 
     {% block scripts %}{% endblock %}
+
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/static/sw.js')
+            .then(reg => console.log('[SW] Registered:', reg.scope))
+            .catch(err => console.warn('[SW] Registration failed:', err));
+        });
+      }
+    </script>
 </body>
 </html>
