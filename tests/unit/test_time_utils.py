@@ -11,55 +11,57 @@ from utils.time import (
 )
 
 
-def test_cairo_now_is_utc_plus_2() -> None:
-    with freeze_time("2024-08-15 22:00:00"):
+def test_cairo_now_observes_dst() -> None:
+    # Summer (August): UTC+3
+    with freeze_time("2024-08-15 21:00:00"):
         assert cairo_now() == datetime(2024, 8, 16, 0, 0, 0)
+    # Winter (January): UTC+2
+    with freeze_time("2024-01-15 22:00:00"):
+        assert cairo_now() == datetime(2024, 1, 16, 0, 0, 0)
 
 
 def test_cairo_today_start_returns_utc() -> None:
-    # Freezes Cairo time at midnight (UTC 22:00 previous day)
-    with freeze_time("2024-08-15 22:00:00"):
-        # Cairo now is 2024-08-16 00:00:00.
-        # Midnight today in Cairo is 2024-08-16 00:00:00.
-        # UTC corresponding to Cairo midnight is 2024-08-15 22:00:00.
-        assert cairo_today_start() == datetime(2024, 8, 15, 22, 0, 0)
+    # Summer (August): UTC+3
+    with freeze_time("2024-08-15 21:00:00"):
+        assert cairo_today_start() == datetime(2024, 8, 15, 21, 0, 0)
+    # Winter (January): UTC+2
+    with freeze_time("2024-01-15 22:00:00"):
+        assert cairo_today_start() == datetime(2024, 1, 15, 22, 0, 0)
 
 
 def test_cairo_date_to_utc_start() -> None:
-    assert cairo_date_to_utc_start(date(2024, 8, 15)) == datetime(2024, 8, 14, 22, 0, 0)
+    # Summer: 2024-08-15 midnight Cairo -> 2024-08-14 21:00:00 UTC
+    assert cairo_date_to_utc_start(date(2024, 8, 15)) == datetime(2024, 8, 14, 21, 0, 0)
+    # Winter: 2024-01-15 midnight Cairo -> 2024-01-14 22:00:00 UTC
+    assert cairo_date_to_utc_start(date(2024, 1, 15)) == datetime(2024, 1, 14, 22, 0, 0)
 
 
 def test_cairo_date_to_utc_end() -> None:
-    assert cairo_date_to_utc_end(date(2024, 8, 15)) == datetime(2024, 8, 15, 22, 0, 0)
+    # Summer: 2024-08-15 end date -> 2024-08-15 21:00:00 UTC
+    assert cairo_date_to_utc_end(date(2024, 8, 15)) == datetime(2024, 8, 15, 21, 0, 0)
+    # Winter: 2024-01-15 end date -> 2024-01-15 22:00:00 UTC
+    assert cairo_date_to_utc_end(date(2024, 1, 15)) == datetime(2024, 1, 15, 22, 0, 0)
 
 
 def test_cairo_date_str() -> None:
-    # UTC 2024-08-15 23:30 -> Cairo 2024-08-16 01:30 -> "2024-08-16"
-    assert cairo_date_str(datetime(2024, 8, 15, 23, 30)) == "2024-08-16"
+    # Summer: UTC 2024-08-15 21:30 -> Cairo 2024-08-16 00:30 -> "2024-08-16"
+    assert cairo_date_str(datetime(2024, 8, 15, 21, 30)) == "2024-08-16"
 
 
-def test_utc_to_cairo_adds_two_hours() -> None:
-    assert utc_to_cairo(datetime(2024, 8, 15, 10, 0, 0)) == datetime(
-        2024, 8, 15, 12, 0, 0
-    )
+def test_utc_to_cairo_dst() -> None:
+    # Summer (+3 hours): UTC 10:00 -> Cairo 13:00
+    assert utc_to_cairo(datetime(2024, 8, 15, 10, 0, 0)) == datetime(2024, 8, 15, 13, 0, 0)
+    # Winter (+2 hours): UTC 10:00 -> Cairo 12:00
+    assert utc_to_cairo(datetime(2024, 1, 15, 10, 0, 0)) == datetime(2024, 1, 15, 12, 0, 0)
 
 
 def test_cairo_date_to_utc_end_is_next_midnight() -> None:
-    assert cairo_date_to_utc_end(date(2024, 8, 15)) == cairo_date_to_utc_start(
-        date(2024, 8, 16)
-    )
+    assert cairo_date_to_utc_end(date(2024, 8, 15)) == cairo_date_to_utc_start(date(2024, 8, 16))
 
 
-def test_utc_to_cairo_midnight_crossing() -> None:
-    # UTC 2024-08-15 23:30 -> Cairo 2024-08-16 01:30 (next calendar day)
-    assert utc_to_cairo(datetime(2024, 8, 15, 23, 30)) == datetime(2024, 8, 16, 1, 30)
-
-
-def test_cairo_date_str_midnight_utc() -> None:
-    # UTC 2024-08-15 22:00:00 -> Cairo 2024-08-16 00:00:00 -> "2024-08-16"
-    assert cairo_date_str(datetime(2024, 8, 15, 22, 0, 0)) == "2024-08-16"
-
-
-def test_cairo_date_str_full() -> None:
+def test_cairo_date_str_full_12h() -> None:
     assert cairo_date_str_full(None) == ""
-    assert cairo_date_str_full(datetime(2024, 8, 15, 22, 30)) == "2024-08-16 00:30"
+    # Summer: UTC 2024-08-15 21:30 -> Cairo 2024-08-16 00:30 (12:30 ص)
+    assert cairo_date_str_full(datetime(2024, 8, 15, 21, 30)) == "2024-08-16 12:30 ص"
+    # Winter PM: UTC 2024-01-15 13:45 -> Cairo 2024-01-15 15:45 (03:45 م)
+    assert cairo_date_str_full(datetime(2024, 1, 15, 13, 45)) == "2024-01-15 03:45 م"

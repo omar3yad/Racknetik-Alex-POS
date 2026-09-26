@@ -8,17 +8,43 @@ function startClock() {
     const el = document.getElementById("live-clock");
     if (!el) return;
 
-    const now = new Date();
-    // Adjust to UTC + 2 hours for Cairo time
-    const cairoTime = new Date(now.getTime() + now.getTimezoneOffset() * 60 * 1000 + 2 * 60 * 60 * 1000);
+    try {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Africa/Cairo",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      });
 
-    const hh = String(cairoTime.getHours()).padStart(2, "0");
-    const mm = String(cairoTime.getMinutes()).padStart(2, "0");
-    const ss = String(cairoTime.getSeconds()).padStart(2, "0");
+      const parts = formatter.formatToParts(now);
+      let hour = "", minute = "", second = "", dayPeriod = "";
+      for (const part of parts) {
+        if (part.type === "hour") hour = part.value;
+        if (part.type === "minute") minute = part.value;
+        if (part.type === "second") second = part.value;
+        if (part.type === "dayPeriod") dayPeriod = part.value;
+      }
 
-    const formatted = hh + ":" + mm + ":" + ss;
-    const arabic = formatted.split("").map(c => arabicDigits[c] || c).join("");
-    el.textContent = arabic;
+      const isPM = (dayPeriod && dayPeriod.toUpperCase() === "PM");
+      const ampmArabic = isPM ? "م" : "ص";
+      const timeFormatted = `${hour}:${minute}:${second}`;
+      const arabicTime = timeFormatted.split("").map(c => arabicDigits[c] || c).join("");
+      el.textContent = `${arabicTime} ${ampmArabic}`;
+    } catch (e) {
+      const now = new Date();
+      let hours = now.getHours();
+      const ampm = hours >= 12 ? "م" : "ص";
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      const hh = String(hours).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const ss = String(now.getSeconds()).padStart(2, "0");
+      const formatted = hh + ":" + mm + ":" + ss;
+      const arabic = formatted.split("").map(c => arabicDigits[c] || c).join("");
+      el.textContent = arabic + " " + ampm;
+    }
   }
 
   update();

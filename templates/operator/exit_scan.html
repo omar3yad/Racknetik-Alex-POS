@@ -53,20 +53,28 @@
     </div>
     {% endif %}
 
-    <!-- Restart camera button (hidden by default) -->
-    <button type="button" id="btn-start-camera" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg shadow mb-6 transition duration-200 flex items-center justify-center gap-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-        </svg>
-        تفعيل قارئ الكاميرا
-    </button>
-
     <!-- Card Scan Container -->
     <div class="bg-gray-800 border border-gray-700 rounded-2xl p-6 shadow-xl text-center">
-        <h2 class="text-2xl font-bold mb-6 text-indigo-300">{{ t("operator.exit.scan_label") }}</h2>
+        <h2 class="text-2xl font-bold mb-5 text-indigo-300">{{ t("operator.exit.scan_label") }}</h2>
         
-        <!-- Camera Scanner Element -->
-        <div class="relative w-full aspect-[4/3] bg-gray-900 border border-gray-700 rounded-xl overflow-hidden mb-6" id="scanner-wrapper">
+        <!-- Open Camera Button (Visible by default) -->
+        <button type="button" 
+                id="btn-start-camera" 
+                class="w-full bg-gray-900/90 hover:bg-gray-900 border-2 border-dashed border-indigo-500/40 hover:border-indigo-400 text-white font-bold py-3.5 px-4 rounded-xl mb-5 transition duration-200 flex items-center justify-center gap-3 cursor-pointer group active:scale-[0.99] shadow-inner">
+            <div class="bg-indigo-600 group-hover:bg-indigo-500 text-white p-2.5 rounded-lg shadow-md transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+            <div class="text-right">
+                <div class="text-base font-bold text-white">مسح بالكاميرا</div>
+                <div class="text-xs text-indigo-300/80">اضغط لفتح كاميرا الجهاز لمسح الباركود</div>
+            </div>
+        </button>
+
+        <!-- Camera Scanner Element (Hidden by default) -->
+        <div class="relative w-full aspect-[4/3] bg-gray-900 border border-gray-700 rounded-xl overflow-hidden mb-6 hidden" id="scanner-wrapper">
             <!-- Loading indicator -->
             <div id="scanner-loading" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-20 text-gray-400">
                 <svg class="animate-spin h-8 w-8 text-indigo-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -125,7 +133,7 @@
 
 {% block scripts %}
 <script src="/static/js/html5-qrcode.min.js"></script>
-<script src="/static/js/scan.js"></script>
-<script src="/static/js/camera-scan.js"></script>
+<script src="/static/js/scan.js?v=2"></script>
+<script src="/static/js/camera-scan.js?v=2"></script>
 {% endblock %}
 

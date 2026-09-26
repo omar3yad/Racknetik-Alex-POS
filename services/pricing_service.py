@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.pricing_rule import PricingRule
 from repositories.rate_repo import PricingRuleRepository
-from schemas.pricing_rule import PricingRuleCreate
+from schemas.pricing_rule import PricingRuleCreate, PricingRuleUpdate
 from services.audit_service import AuditService
 from services.exceptions import NoPricingRuleError, RateLabelAlreadyExistsError
 from services.pricing_calculation import PriceCalculation
@@ -147,6 +147,8 @@ class PricingService:
         rule = await rate_repo.create(
             label=data.label,
             rate_per_hour=data.rate_per_hour,
+            first_hour_charge=data.first_hour_charge,
+            subsequent_hour_charge=data.subsequent_hour_charge,
             minimum_charge=data.minimum_charge,
             grace_period_mins=data.grace_period_mins,
             lost_card_penalty=data.lost_card_penalty,
@@ -166,10 +168,83 @@ class PricingService:
             after={
                 "label": rule.label,
                 "rate_per_hour": rule.rate_per_hour,
+                "first_hour_charge": rule.first_hour_charge,
+                "subsequent_hour_charge": rule.subsequent_hour_charge,
                 "minimum_charge": rule.minimum_charge,
                 "grace_period_mins": rule.grace_period_mins,
                 "lost_card_penalty": rule.lost_card_penalty,
                 "effective_from": rule.effective_from.isoformat() if rule.effective_from else None,
+            },
+        )
+        await self.db.commit()
+        return rule
+
+    async def update_rule(
+        self,
+        rule_id: int,
+        data: PricingRuleUpdate,
+        admin_id: int,
+        rate_repo: PricingRuleRepository,
+        audit_service: AuditService,
+    ) -> PricingRule:
+        """Updates an existing pricing rule with uniqueness check and audit logging."""
+        rule = await rate_repo.get_by_id(rule_id)
+        if not rule:
+            raise ValueError(f"PricingRule with id {rule_id} not found")
+
+        if data.label and data.label != rule.label:
+            existing = await rate_repo.get_by_label(data.label)
+            if existing and existing.id != rule_id:
+                raise RateLabelAlreadyExistsError(f"Pricing rule with label '{data.label}' already exists")
+
+        before_state = {
+            "label": rule.label,
+            "rate_per_hour": rule.rate_per_hour,
+            "first_hour_charge": rule.first_hour_charge,
+            "subsequent_hour_charge": rule.subsequent_hour_charge,
+            "minimum_charge": rule.minimum_charge,
+            "grace_period_mins": rule.grace_period_mins,
+            "lost_card_penalty": rule.lost_card_penalty,
+        }
+
+        update_dict = {}
+        if data.label is not None:
+            update_dict["label"] = data.label
+        if data.rate_per_hour is not None:
+            update_dict["rate_per_hour"] = data.rate_per_hour
+        if data.first_hour_charge is not None:
+            update_dict["first_hour_charge"] = data.first_hour_charge
+        if data.subsequent_hour_charge is not None:
+            update_dict["subsequent_hour_charge"] = data.subsequent_hour_charge
+        if data.minimum_charge is not None:
+            update_dict["minimum_charge"] = data.minimum_charge
+        if data.grace_period_mins is not None:
+            update_dict["grace_period_mins"] = data.grace_period_mins
+        if data.lost_card_penalty is not None:
+            update_dict["lost_card_penalty"] = data.lost_card_penalty
+        if data.effective_from is not None:
+            update_dict["effective_from"] = data.effective_from
+        if data.effective_until is not None:
+            update_dict["effective_until"] = data.effective_until
+
+        rule = await rate_repo.update(rule_id, **update_dict)
+        await self.db.commit()
+        await self.db.refresh(rule)
+
+        await audit_service.log(
+            actor_id=admin_id,
+            action="RATE_UPDATED",
+            entity_type="pricing_rule",
+            entity_id=rule.id,
+            before=before_state,
+            after={
+                "label": rule.label,
+                "rate_per_hour": rule.rate_per_hour,
+                "first_hour_charge": rule.first_hour_charge,
+                "subsequent_hour_charge": rule.subsequent_hour_charge,
+                "minimum_charge": rule.minimum_charge,
+                "grace_period_mins": rule.grace_period_mins,
+                "lost_card_penalty": rule.lost_card_penalty,
             },
         )
         await self.db.commit()

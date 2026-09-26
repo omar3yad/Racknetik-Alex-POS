@@ -44,15 +44,44 @@ def discrepancy_class_filter(
     return "text-red-600"
 
 
+def format_cairo_12h(dt: datetime | date | None, fmt: str | None = None) -> str:
+    """Format datetime into 12-hour Cairo local datetime string with Arabic AM/PM (ص / م).
+    Default format: 'YYYY-MM-DD hh:mm م/ص'.
+    """
+    if dt is None:
+        return "—"
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        return dt.strftime(fmt or "%Y-%m-%d")
+
+    c_dt = utc_to_cairo(dt)
+    if fmt is not None:
+        formatted = c_dt.strftime(fmt)
+        return formatted.replace("AM", "ص").replace("PM", "م").replace("am", "ص").replace("pm", "م")
+
+    time_part = c_dt.strftime("%I:%M")
+    ampm = "م" if c_dt.hour >= 12 else "ص"
+    return f"{c_dt.strftime('%Y-%m-%d')} {time_part} {ampm}"
+
+
+def cairo_time_filter(dt: datetime | None) -> str:
+    """Format time only in 12-hour Cairo local format: 'hh:mm م/ص'."""
+    if dt is None:
+        return "—"
+    c_dt = utc_to_cairo(dt)
+    time_part = c_dt.strftime("%I:%M")
+    ampm = "م" if c_dt.hour >= 12 else "ص"
+    return f"{time_part} {ampm}"
+
+
 def cairo_date_filter(dt: datetime | date | None, fmt: str = "%Y-%m-%d") -> str:
-    """Format a UTC or naive datetime into Cairo local time string."""
+    """Format a UTC or naive datetime into Cairo local date string."""
     if dt is None:
         return "—"
     if isinstance(dt, date) and not isinstance(dt, datetime):
         return dt.strftime(fmt)
     if fmt == "%Y-%m-%d":
         return cairo_date_str(dt)
-    return utc_to_cairo(dt).strftime(fmt)
+    return format_cairo_12h(dt, fmt=fmt)
 
 
 def session_status_label_filter(status: str | Any) -> str:
@@ -71,11 +100,11 @@ def shift_status_label_filter(ended_at: datetime | None) -> str:
     return "مفتوح" if ended_at is None else "مغلق"
 
 
-def cairo_datetime_filter(dt: datetime | None, fmt: str = "%Y-%m-%d %I:%M %p") -> str:
-    """Format a UTC or naive datetime into full Cairo local datetime string."""
+def cairo_datetime_filter(dt: datetime | None, fmt: str | None = None) -> str:
+    """Format a UTC or naive datetime into full Cairo local datetime string in 12-hour format."""
     if dt is None:
         return "—"
-    return cairo_date_filter(dt, fmt=fmt)
+    return format_cairo_12h(dt, fmt=fmt)
 
 
 def piastres_to_egp_filter(piastres: int | None) -> str:
@@ -171,8 +200,10 @@ def register_jinja_filters(templates: Jinja2Templates) -> None:
     templates.env.filters["t"] = t
     templates.env.filters["cairo_date"] = cairo_date_filter
     templates.env.filters["cairo_datetime"] = cairo_datetime_filter
+    templates.env.filters["cairo_time"] = cairo_time_filter
     templates.env.filters["format_date"] = cairo_date_filter
     templates.env.filters["format_datetime"] = cairo_datetime_filter
+    templates.env.filters["format_time"] = cairo_time_filter
     templates.env.filters["piastres_to_egp"] = piastres_to_egp_filter
     templates.env.filters["format_egp"] = piastres_to_egp_filter
     templates.env.filters["duration_ar"] = duration_ar_filter

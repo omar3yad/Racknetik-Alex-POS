@@ -120,8 +120,6 @@
   }
 
   function init() {
-    startScanning();
-
     // Bind control buttons
     const btnStop = document.getElementById("btn-stop-camera");
     if (btnStop) {

@@ -74,4 +74,15 @@ class PricingRuleRepository:
         await self.db.flush()
         return rule
 
+    async def update(self, rule_id: int, **kwargs) -> PricingRule | None:
+        """Updates a pricing rule by id."""
+        rule = await self.get_by_id(rule_id)
+        if not rule:
+            return None
+        for key, value in kwargs.items():
+            if value is not None and hasattr(rule, key):
+                setattr(rule, key, value)
+        await self.db.flush()
+        return rule
+
 __all__ = ["PricingRuleRepository"]

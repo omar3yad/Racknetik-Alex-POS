@@ -7,7 +7,7 @@ from dependencies import require_admin, require_any_role
 from models.user import User
 from repositories.rate_repo import PricingRuleRepository
 from schemas.common import PaginatedResponse
-from schemas.pricing_rule import PricingRuleCreate, PricingRuleResponse
+from schemas.pricing_rule import PricingRuleCreate, PricingRuleUpdate, PricingRuleResponse
 from schemas.parking_session import PriceBreakdownResponse
 from services.pricing_service import PricingService
 from services.audit_service import AuditService
@@ -83,6 +83,40 @@ async def create_rate(
             admin_id=current_user.id,
             rate_repo=pricing_repo,
             audit_service=audit_service,
+        )
+    except RateLabelAlreadyExistsError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+            headers={"X-Error-Code": "RATE_LABEL_ALREADY_EXISTS"},
+        )
+
+    return {"data": PricingRuleResponse.model_validate(rule).model_dump(mode="json")}
+
+@router.put("/{rule_id}")
+@router.patch("/{rule_id}")
+async def update_rate(
+    rule_id: int,
+    data: PricingRuleUpdate,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+    pricing_repo: PricingRuleRepository = Depends(get_pricing_repo),
+    pricing_service: PricingService = Depends(get_pricing_service),
+):
+    audit_service = AuditService(db)
+    try:
+        rule = await pricing_service.update_rule(
+            rule_id=rule_id,
+            data=data,
+            admin_id=current_user.id,
+            rate_repo=pricing_repo,
+            audit_service=audit_service,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+            headers={"X-Error-Code": "PRICING_RULE_NOT_FOUND"},
         )
     except RateLabelAlreadyExistsError as e:
         raise HTTPException(

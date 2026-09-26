@@ -4,41 +4,150 @@
 
 {% block content %}
 <div class="space-y-6">
-  <!-- Title & New Rate Toggle Button -->
+  <!-- Title & Action Buttons -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <div>
       <h1 class="text-2xl font-bold text-white">{{ t("admin.rates.title") }}</h1>
-      <p class="text-sm text-gray-400 mt-1">إدارة تسعير وقوف السيارات وقواعد المحاسبة</p>
+      <p class="text-sm text-gray-400 mt-1">إدارة وتعديل تسعيرة وقوف السيارات (سعر أول ساعة، الساعات التالية، فترات السماح)</p>
     </div>
-    <div>
-      <button id="toggle-new-rate-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 shadow">
+    <div class="flex items-center gap-3">
+      {% if rules and rules|length > 0 %}
+      <button id="quick-edit-active-btn"
+              data-id="{{ rules[0].id }}"
+              data-label="{{ rules[0].label }}"
+              data-first-hour="{{ (rules[0].first_hour_charge / 100) if rules[0].first_hour_charge > 0 else (rules[0].rate_per_hour / 100) }}"
+              data-subsequent-hour="{{ (rules[0].subsequent_hour_charge / 100) if rules[0].first_hour_charge > 0 else (rules[0].rate_per_hour / 100) }}"
+              data-rate-per-hour="{{ rules[0].rate_per_hour / 100 }}"
+              data-grace="{{ rules[0].grace_period_mins }}"
+              data-min-charge="{{ rules[0].minimum_charge / 100 }}"
+              data-lost-penalty="{{ rules[0].lost_card_penalty / 100 }}"
+              onclick="handleEditBtnClick(this)"
+              class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 shadow-lg shadow-emerald-600/30 cursor-pointer">
+        <span>✏️</span>
+        <span>تعديل التسعيرة الحالية</span>
+      </button>
+      {% endif %}
+      <!-- <button id="toggle-new-rate-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer">
         <span>➕</span>
         <span>{{ t("admin.rates.create") }}</span>
-      </button>
+      </button> -->
     </div>
   </div>
 
+  <!-- Notification Toast -->
+  <div id="toast-msg" class="hidden rounded-lg p-4 text-sm font-medium transition-all duration-300 shadow-lg"></div>
+
+  <!-- Modal / Collapsible Edit Rate Container -->
+  <div id="edit-rate-container" class="hidden bg-gray-800/95 border border-emerald-500/50 rounded-xl p-6 shadow-2xl backdrop-blur-sm">
+    <div class="flex items-center justify-between border-b border-gray-700/80 pb-3 mb-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        <span class="text-emerald-400">✏️</span>
+        <span id="edit-modal-title">تعديل التسعيرة</span>
+      </h2>
+      <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-white text-lg cursor-pointer">✕</button>
+    </div>
+
+    <div id="edit-form-error-msg" class="hidden bg-red-950/80 border border-red-500 text-red-200 text-sm p-3 rounded-lg mb-4"></div>
+
+    <form id="edit-rate-form" class="space-y-4">
+      <input type="hidden" id="edit-rate-id">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <!-- Label -->
+        <div class="md:col-span-2">
+          <label class="block text-xs font-medium text-gray-300 mb-1">اسم التعريفة / الوصف *</label>
+          <input type="text" id="edit-rate-label" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <!-- First Hour Charge (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-emerald-300 mb-1">سعر أول ساعة (ج.م) *</label>
+          <input type="number" id="edit-rate-first-hour" step="0.01" min="0" required class="w-full bg-gray-900 border border-emerald-600/60 rounded-lg px-3 py-2 text-sm text-emerald-300 font-bold focus:outline-none focus:border-emerald-500 non-negative">
+          <span class="text-[10px] text-gray-400">سعر الساعة الأولى للسيارة</span>
+        </div>
+
+        <!-- Subsequent Hour Charge (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-cyan-300 mb-1">سعر الساعات التالية (ج.م) *</label>
+          <input type="number" id="edit-rate-subsequent-hour" step="0.01" min="0" required class="w-full bg-gray-900 border border-cyan-600/60 rounded-lg px-3 py-2 text-sm text-cyan-300 font-bold focus:outline-none focus:border-cyan-500 non-negative">
+          <span class="text-[10px] text-gray-400">عن كل ساعة إضافية بعد الأولى</span>
+        </div>
+
+        <!-- Flat Rate Per Hour (EGP) (Fallback) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">سعر الساعة الافتراضي (ج.م)</label>
+          <input type="number" id="edit-rate-per-hour" step="0.01" min="0" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 non-negative">
+          <span class="text-[10px] text-gray-500">احتياطي</span>
+        </div>
+
+        <!-- Grace Period (Mins) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">فترة السماح المجانية (دقائق)</label>
+          <input type="number" id="edit-rate-grace" min="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 non-negative">
+        </div>
+
+        <!-- Minimum Charge (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">الحد الأدنى للمحاسبة (ج.م)</label>
+          <input type="number" id="edit-rate-min-charge" step="0.01" min="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 non-negative">
+        </div>
+
+        <!-- Lost Card Penalty (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">غرامة الكرت المفقود (ج.م)</label>
+          <input type="number" id="edit-rate-lost-penalty" step="0.01" min="0" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 non-negative">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-700/60">
+        <button type="button" onclick="closeEditModal()" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm transition cursor-pointer">إلغاء</button>
+        <button type="submit" id="save-edit-rate-btn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-2 rounded-lg text-sm transition shadow-lg shadow-emerald-600/30 flex items-center gap-2 cursor-pointer">
+          <span>💾</span>
+          <span>حفظ التعديلات</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
   <!-- Inline New Rate Form (Collapsible) -->
-  <div id="new-rate-container" class="hidden bg-gray-800/90 border border-indigo-500/40 rounded-xl p-5 shadow-lg">
-    <h2 class="text-base font-bold text-white mb-4 flex items-center gap-2">
-      <span>➕</span>
-      <span>{{ t("admin.rates.create") }}</span>
-    </h2>
+  <div id="new-rate-container" class="hidden bg-gray-800/95 border border-indigo-500/40 rounded-xl p-6 shadow-2xl backdrop-blur-sm">
+    <div class="flex items-center justify-between border-b border-gray-700/80 pb-3 mb-4">
+      <h2 class="text-base font-bold text-white flex items-center gap-2">
+        <span class="text-indigo-400">➕</span>
+        <span>{{ t("admin.rates.create") }}</span>
+      </h2>
+      <button type="button" onclick="document.getElementById('new-rate-container').classList.add('hidden')" class="text-gray-400 hover:text-white text-lg cursor-pointer">✕</button>
+    </div>
 
     <div id="form-error-msg" class="hidden bg-red-950/80 border border-red-500 text-red-200 text-sm p-3 rounded-lg mb-4"></div>
 
     <form id="create-rate-form" class="space-y-4">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <!-- Label -->
-        <div>
+        <div class="md:col-span-2">
           <label class="block text-xs font-medium text-gray-300 mb-1">اسم التعريفة / الوصف *</label>
-          <input type="text" id="rate-label" required placeholder="مثال: التعريفة القياسية ٢٠٢٦" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+          <input type="text" id="rate-label" required placeholder="مثال: تسعيرة أول ساعة ٢٠ ثم ١٠" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
         </div>
 
-        <!-- Rate Per Hour (EGP) -->
+        <!-- First Hour Charge (EGP) -->
         <div>
-          <label class="block text-xs font-medium text-gray-300 mb-1">سعر الساعة (ج.م) *</label>
-          <input type="number" id="rate-per-hour" step="0.01" min="0" required placeholder="10.00" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 non-negative">
+          <label class="block text-xs font-medium text-emerald-300 mb-1">سعر أول ساعة (ج.م) *</label>
+          <input type="number" id="rate-first-hour" step="0.01" min="0" required placeholder="20.00" value="20.00" class="w-full bg-gray-900 border border-emerald-600/50 rounded-lg px-3 py-2 text-sm text-emerald-300 font-semibold focus:outline-none focus:border-emerald-500 non-negative">
+          <span class="text-[10px] text-gray-400">الساعة الأولى للسيارة</span>
+        </div>
+
+        <!-- Subsequent Hour Charge (EGP) -->
+        <div>
+          <label class="block text-xs font-medium text-cyan-300 mb-1">سعر الساعات التالية (ج.م) *</label>
+          <input type="number" id="rate-subsequent-hour" step="0.01" min="0" required placeholder="10.00" value="10.00" class="w-full bg-gray-900 border border-cyan-600/50 rounded-lg px-3 py-2 text-sm text-cyan-300 font-semibold focus:outline-none focus:border-cyan-500 non-negative">
+          <span class="text-[10px] text-gray-400">عن كل ساعة إضافية</span>
+        </div>
+
+        <!-- Flat Rate Per Hour (EGP) (Fallback) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-300 mb-1">سعر الساعة الافتراضي (ج.م)</label>
+          <input type="number" id="rate-per-hour" step="0.01" min="0" required placeholder="10.00" value="10.00" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 non-negative">
+          <span class="text-[10px] text-gray-500">احتياطي</span>
         </div>
 
         <!-- Grace Period (Mins) -->
@@ -60,15 +169,15 @@
         </div>
 
         <!-- Effective From -->
-        <div>
-          <label class="block text-xs font-medium text-gray-300 mb-1">سارية من تاريخ / وقت</label>
+        <div class="sm:col-span-2 md:col-span-4">
+          <label class="block text-xs font-medium text-gray-300 mb-1">سارية من تاريخ / وقت (اتركه فارغاً للتطبيق الفوري)</label>
           <input type="datetime-local" id="rate-effective-from" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-3 pt-2">
-        <button type="button" id="cancel-form-btn" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm transition">إلغاء</button>
-        <button type="submit" id="save-rate-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-lg text-sm transition">حفظ التعريفة</button>
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-700/60">
+        <button type="button" onclick="document.getElementById('new-rate-container').classList.add('hidden')" class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm transition cursor-pointer">إلغاء</button>
+        <button type="submit" id="save-rate-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-lg text-sm transition shadow-lg shadow-indigo-600/30 cursor-pointer">حفظ التعريفة</button>
       </div>
     </form>
   </div>
@@ -85,24 +194,38 @@
           <tr>
             <th class="p-3">#</th>
             <th class="p-3">اسم التعريفة</th>
-            <th class="p-3">سعر الساعة</th>
+            <th class="p-3">أول ساعة</th>
+            <th class="p-3">الساعات التالية</th>
             <th class="p-3">فترة السماح</th>
             <th class="p-3">الحد الأدنى</th>
             <th class="p-3">غرامة الفقدان</th>
             <th class="p-3">تاريخ السريان</th>
             <th class="p-3">الحالة</th>
-            <th class="p-3">الإجراء</th>
+            <th class="p-3 text-center">الإجراءات</th>
           </tr>
         </thead>
         <tbody id="rates-table-body" class="divide-y divide-gray-700/60">
           {% for r in rules %}
           <tr id="rule-row-{{ r.id }}" class="hover:bg-gray-700/30 transition">
             <td class="p-3 font-mono text-gray-400">#{{ r.id | to_arabic_indic }}</td>
-            <td class="p-3 font-medium text-white">{{ r.label }}</td>
-            <td class="p-3 font-semibold text-emerald-400">{{ r.rate_per_hour | format_egp }} ج.م</td>
-            <td class="p-3 text-gray-300">{{ r.grace_period_mins | to_arabic_indic }} دقيقة</td>
-            <td class="p-3 text-gray-300">{{ r.minimum_charge | format_egp }} ج.م</td>
-            <td class="p-3 text-red-400">{{ r.lost_card_penalty | format_egp }} ج.م</td>
+            <td class="p-3 font-medium text-white cell-label">{{ r.label }}</td>
+            <td class="p-3 font-semibold text-emerald-400 cell-first-hour">
+              {% if r.first_hour_charge > 0 %}
+                {{ r.first_hour_charge | format_egp }} ج.م
+              {% else %}
+                <span class="text-gray-400">{{ r.rate_per_hour | format_egp }} ج.م</span>
+              {% endif %}
+            </td>
+            <td class="p-3 font-semibold text-cyan-400 cell-subsequent-hour">
+              {% if r.first_hour_charge > 0 %}
+                {{ r.subsequent_hour_charge | format_egp }} ج.م
+              {% else %}
+                <span class="text-gray-400">{{ r.rate_per_hour | format_egp }} ج.م</span>
+              {% endif %}
+            </td>
+            <td class="p-3 text-gray-300 cell-grace">{{ r.grace_period_mins | to_arabic_indic }} دقيقة</td>
+            <td class="p-3 text-gray-300 cell-min-charge">{{ r.minimum_charge | format_egp }} ج.م</td>
+            <td class="p-3 text-red-400 cell-lost-penalty">{{ r.lost_card_penalty | format_egp }} ج.م</td>
             <td class="p-3 text-gray-400 text-xs">{{ r.effective_from | format_datetime }}</td>
             <td class="p-3">
               <span class="rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50' if r.is_active else 'bg-gray-700 text-gray-400' }}">
@@ -110,14 +233,29 @@
               </span>
             </td>
             <td class="p-3">
-              <button onclick="activateRule({{ r.id }})" class="activate-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1 rounded transition disabled:opacity-40 disabled:cursor-not-allowed" {% if r.is_active %}disabled{% endif %}>
-                {{ t("admin.rates.activate") }}
-              </button>
+              <div class="flex items-center justify-center gap-2">
+                <button data-id="{{ r.id }}"
+                        data-label="{{ r.label }}"
+                        data-first-hour="{{ (r.first_hour_charge / 100) if r.first_hour_charge > 0 else (r.rate_per_hour / 100) }}"
+                        data-subsequent-hour="{{ (r.subsequent_hour_charge / 100) if r.first_hour_charge > 0 else (r.rate_per_hour / 100) }}"
+                        data-rate-per-hour="{{ r.rate_per_hour / 100 }}"
+                        data-grace="{{ r.grace_period_mins }}"
+                        data-min-charge="{{ r.minimum_charge / 100 }}"
+                        data-lost-penalty="{{ r.lost_card_penalty / 100 }}"
+                        onclick="handleEditBtnClick(this)"
+                        class="edit-action-btn bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs px-2.5 py-1 rounded transition flex items-center gap-1 shadow cursor-pointer">
+                  <span>✏️</span>
+                  <span>تعديل</span>
+                </button>
+                <button onclick="activateRule({{ r.id }})" class="activate-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-2.5 py-1 rounded transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed" {% if r.is_active %}disabled{% endif %}>
+                  {{ t("admin.rates.activate") }}
+                </button>
+              </div>
             </td>
           </tr>
           {% else %}
           <tr id="no-rules-row">
-            <td colspan="9" class="p-6 text-center text-gray-400">لا توجد تعريفات مسجلة</td>
+            <td colspan="10" class="p-6 text-center text-gray-400">لا توجد تعريفات مسجلة</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -129,7 +267,7 @@
 
 {% block scripts %}
 <script>
-  // Prevent negative inputs
+  // Non-negative input validation
   document.querySelectorAll('.non-negative').forEach(input => {
     input.addEventListener('input', () => {
       if (parseFloat(input.value) < 0) {
@@ -138,29 +276,176 @@
     });
   });
 
-  // Toggle container
-  const toggleBtn = document.getElementById('toggle-new-rate-btn');
-  const cancelBtn = document.getElementById('cancel-form-btn');
-  const container = document.getElementById('new-rate-container');
-  const form = document.getElementById('create-rate-form');
-  const errDiv = document.getElementById('form-error-msg');
-
-  if (toggleBtn && container) {
-    toggleBtn.addEventListener('click', () => {
-      container.classList.toggle('hidden');
-      errDiv.classList.add('hidden');
-    });
-    cancelBtn.addEventListener('click', () => {
-      container.classList.add('hidden');
-      errDiv.classList.add('hidden');
-    });
-  }
-
-  // Convert number to Arabic Indic
+  // Arabic Indic digits helper
   function toArabic(num) {
     const map = {'0':'٠','1':'١','2':'٢','3':'٣','4':'٤','5':'٥','6':'٦','7':'٧','8':'٨','9':'٩'};
     return String(num).replace(/[0-9]/g, d => map[d] || d);
   }
+
+  // Toast helper
+  function showToast(message, isSuccess = true) {
+    const toast = document.getElementById('toast-msg');
+    toast.textContent = message;
+    toast.className = `rounded-lg p-4 text-sm font-medium transition-all duration-300 shadow-lg ${isSuccess ? 'bg-emerald-950/90 text-emerald-200 border border-emerald-500' : 'bg-red-950/90 text-red-200 border border-red-500'}`;
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+      toast.classList.add('hidden');
+    }, 4000);
+  }
+
+  // Toggle create form
+  const toggleBtn = document.getElementById('toggle-new-rate-btn');
+  const createContainer = document.getElementById('new-rate-container');
+  const createForm = document.getElementById('create-rate-form');
+  const createErrDiv = document.getElementById('form-error-msg');
+
+  if (toggleBtn && createContainer) {
+    toggleBtn.addEventListener('click', () => {
+      createContainer.classList.toggle('hidden');
+      createErrDiv.classList.add('hidden');
+      document.getElementById('edit-rate-container').classList.add('hidden');
+    });
+  }
+
+  // Edit button handler using data attributes
+  function handleEditBtnClick(btn) {
+    const id = btn.getAttribute('data-id');
+    const label = btn.getAttribute('data-label');
+    const firstHour = btn.getAttribute('data-first-hour') || 0;
+    const subsequentHour = btn.getAttribute('data-subsequent-hour') || 0;
+    const ratePerHour = btn.getAttribute('data-rate-per-hour') || 0;
+    const grace = btn.getAttribute('data-grace') || 0;
+    const minCharge = btn.getAttribute('data-min-charge') || 0;
+    const lostPenalty = btn.getAttribute('data-lost-penalty') || 0;
+
+    openEditModal(id, label, firstHour, subsequentHour, ratePerHour, grace, minCharge, lostPenalty);
+  }
+
+  // Edit Modal open/close
+  function openEditModal(id, label, firstHour, subsequentHour, ratePerHour, grace, minCharge, lostPenalty) {
+    document.getElementById('edit-rate-id').value = id;
+    document.getElementById('edit-rate-label').value = label;
+    document.getElementById('edit-rate-first-hour').value = parseFloat(firstHour).toFixed(2);
+    document.getElementById('edit-rate-subsequent-hour').value = parseFloat(subsequentHour).toFixed(2);
+    document.getElementById('edit-rate-per-hour').value = parseFloat(ratePerHour).toFixed(2);
+    document.getElementById('edit-rate-grace').value = grace;
+    document.getElementById('edit-rate-min-charge').value = parseFloat(minCharge).toFixed(2);
+    document.getElementById('edit-rate-lost-penalty').value = parseFloat(lostPenalty).toFixed(2);
+
+    document.getElementById('edit-modal-title').textContent = `تعديل التعريفة: ${label}`;
+    document.getElementById('edit-form-error-msg').classList.add('hidden');
+
+    const editContainer = document.getElementById('edit-rate-container');
+    editContainer.classList.remove('hidden');
+    if (createContainer) createContainer.classList.add('hidden');
+
+    editContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-rate-container').classList.add('hidden');
+  }
+
+  // Handle Edit Form Submit (PATCH /api/v1/rates/{id})
+  document.getElementById('edit-rate-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errDiv = document.getElementById('edit-form-error-msg');
+    errDiv.classList.add('hidden');
+
+    const id = document.getElementById('edit-rate-id').value;
+    const label = document.getElementById('edit-rate-label').value.trim();
+    const firstHour = parseFloat(document.getElementById('edit-rate-first-hour').value) || 0;
+    const subsequentHour = parseFloat(document.getElementById('edit-rate-subsequent-hour').value) || 0;
+    const ratePerHour = parseFloat(document.getElementById('edit-rate-per-hour').value) || subsequentHour || 0;
+    const grace = parseInt(document.getElementById('edit-rate-grace').value, 10) || 0;
+    const minCharge = parseFloat(document.getElementById('edit-rate-min-charge').value) || 0;
+    const lostPenalty = parseFloat(document.getElementById('edit-rate-lost-penalty').value) || 0;
+
+    const payload = {
+      label: label,
+      first_hour_charge_egp: firstHour,
+      subsequent_hour_charge_egp: subsequentHour,
+      rate_per_hour_egp: ratePerHour,
+      grace_period_mins: grace,
+      minimum_charge_egp: minCharge,
+      lost_card_penalty_egp: lostPenalty
+    };
+
+    try {
+      const res = await fetch(`/api/v1/rates/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'حدث خطأ أثناء تعديل التعريفة');
+      }
+
+      const json = await res.json();
+      const r = json.data;
+
+      // Update row in table
+      const row = document.getElementById(`rule-row-${id}`);
+      if (row) {
+        const firstHourFormatted = r.first_hour_charge > 0 ? `${(r.first_hour_charge/100).toFixed(2)} ج.م` : `${(r.rate_per_hour/100).toFixed(2)} ج.م`;
+        const subsequentFormatted = r.first_hour_charge > 0 ? `${(r.subsequent_hour_charge/100).toFixed(2)} ج.م` : `${(r.rate_per_hour/100).toFixed(2)} ج.م`;
+
+        const cellLabel = row.querySelector('.cell-label');
+        if (cellLabel) cellLabel.textContent = r.label;
+
+        const cellFirst = row.querySelector('.cell-first-hour');
+        if (cellFirst) cellFirst.textContent = firstHourFormatted;
+
+        const cellSub = row.querySelector('.cell-subsequent-hour');
+        if (cellSub) cellSub.textContent = subsequentFormatted;
+
+        const cellGrace = row.querySelector('.cell-grace');
+        if (cellGrace) cellGrace.textContent = `${toArabic(r.grace_period_mins)} دقيقة`;
+
+        const cellMin = row.querySelector('.cell-min-charge');
+        if (cellMin) cellMin.textContent = `${(r.minimum_charge/100).toFixed(2)} ج.م`;
+
+        const cellLost = row.querySelector('.cell-lost-penalty');
+        if (cellLost) cellLost.textContent = `${(r.lost_card_penalty/100).toFixed(2)} ج.م`;
+
+        // Update data-* attributes on the edit button in this row
+        const editBtn = row.querySelector('.edit-action-btn');
+        if (editBtn) {
+          editBtn.setAttribute('data-label', r.label);
+          editBtn.setAttribute('data-first-hour', (r.first_hour_charge/100).toFixed(2));
+          editBtn.setAttribute('data-subsequent-hour', (r.subsequent_hour_charge/100).toFixed(2));
+          editBtn.setAttribute('data-rate-per-hour', (r.rate_per_hour/100).toFixed(2));
+          editBtn.setAttribute('data-grace', r.grace_period_mins);
+          editBtn.setAttribute('data-min-charge', (r.minimum_charge/100).toFixed(2));
+          editBtn.setAttribute('data-lost-penalty', (r.lost_card_penalty/100).toFixed(2));
+        }
+
+        // Also update quick edit button if it's the same rule
+        const quickBtn = document.getElementById('quick-edit-active-btn');
+        if (quickBtn && quickBtn.getAttribute('data-id') === String(id)) {
+          quickBtn.setAttribute('data-label', r.label);
+          quickBtn.setAttribute('data-first-hour', (r.first_hour_charge/100).toFixed(2));
+          quickBtn.setAttribute('data-subsequent-hour', (r.subsequent_hour_charge/100).toFixed(2));
+          quickBtn.setAttribute('data-rate-per-hour', (r.rate_per_hour/100).toFixed(2));
+          quickBtn.setAttribute('data-grace', r.grace_period_mins);
+          quickBtn.setAttribute('data-min-charge', (r.minimum_charge/100).toFixed(2));
+          quickBtn.setAttribute('data-lost-penalty', (r.lost_card_penalty/100).toFixed(2));
+        }
+
+        // Highlight updated row
+        row.classList.add('bg-emerald-950/40');
+        setTimeout(() => row.classList.remove('bg-emerald-950/40'), 2500);
+      }
+
+      closeEditModal();
+      showToast(`تم حفظ تعديل التعريفة (${r.label}) بنجاح!`);
+    } catch (err) {
+      errDiv.textContent = err.message;
+      errDiv.classList.remove('hidden');
+    }
+  });
 
   // Activate Rule
   async function activateRule(ruleId) {
@@ -191,18 +476,21 @@
           if (btn) btn.disabled = false;
         }
       });
+      showToast('تم تفعيل التعريفة بنجاح!');
     } catch (err) {
       alert(err.message);
     }
   }
 
   // Create Rate via fetch POST
-  form.addEventListener('submit', async (e) => {
+  createForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    errDiv.classList.add('hidden');
+    createErrDiv.classList.add('hidden');
 
     const label = document.getElementById('rate-label').value.trim();
-    const ratePerHour = parseFloat(document.getElementById('rate-per-hour').value) || 0;
+    const firstHour = parseFloat(document.getElementById('rate-first-hour').value) || 0;
+    const subsequentHour = parseFloat(document.getElementById('rate-subsequent-hour').value) || 0;
+    const ratePerHour = parseFloat(document.getElementById('rate-per-hour').value) || subsequentHour || 0;
     const gracePeriod = parseInt(document.getElementById('rate-grace').value, 10) || 0;
     const minCharge = parseFloat(document.getElementById('rate-min-charge').value) || 0;
     const lostPenalty = parseFloat(document.getElementById('rate-lost-penalty').value) || 0;
@@ -211,6 +499,8 @@
     const payload = {
       label: label,
       rate_per_hour_egp: ratePerHour,
+      first_hour_charge_egp: firstHour,
+      subsequent_hour_charge_egp: subsequentHour,
       grace_period_mins: gracePeriod,
       minimum_charge_egp: minCharge,
       lost_card_penalty_egp: lostPenalty,
@@ -237,34 +527,60 @@
       const noRules = document.getElementById('no-rules-row');
       if (noRules) noRules.remove();
 
+      const firstHourVal = (r.first_hour_charge / 100).toFixed(2);
+      const subsequentHourVal = (r.subsequent_hour_charge / 100).toFixed(2);
+      const ratePerHourVal = (r.rate_per_hour / 100).toFixed(2);
+      const minChargeVal = (r.minimum_charge / 100).toFixed(2);
+      const lostPenaltyVal = (r.lost_card_penalty / 100).toFixed(2);
+
+      const firstHourFormatted = r.first_hour_charge > 0 ? `${firstHourVal} ج.م` : `${ratePerHourVal} ج.م`;
+      const subsequentFormatted = r.first_hour_charge > 0 ? `${subsequentHourVal} ج.م` : `${ratePerHourVal} ج.م`;
+
       const tr = document.createElement('tr');
       tr.id = `rule-row-${r.id}`;
       tr.className = 'hover:bg-gray-700/30 transition bg-indigo-950/20';
       tr.innerHTML = `
         <td class="p-3 font-mono text-gray-400">#${toArabic(r.id)}</td>
-        <td class="p-3 font-medium text-white">${r.label}</td>
-        <td class="p-3 font-semibold text-emerald-400">${(r.rate_per_hour/100).toFixed(2)} ج.م</td>
-        <td class="p-3 text-gray-300">${toArabic(r.grace_period_mins)} دقيقة</td>
-        <td class="p-3 text-gray-300">${(r.minimum_charge/100).toFixed(2)} ج.م</td>
-        <td class="p-3 text-red-400">${(r.lost_card_penalty/100).toFixed(2)} ج.م</td>
+        <td class="p-3 font-medium text-white cell-label">${r.label}</td>
+        <td class="p-3 font-semibold text-emerald-400 cell-first-hour">${firstHourFormatted}</td>
+        <td class="p-3 font-semibold text-cyan-400 cell-subsequent-hour">${subsequentFormatted}</td>
+        <td class="p-3 text-gray-300 cell-grace">${toArabic(r.grace_period_mins)} دقيقة</td>
+        <td class="p-3 text-gray-300 cell-min-charge">${minChargeVal} ج.م</td>
+        <td class="p-3 text-red-400 cell-lost-penalty">${lostPenaltyVal} ج.م</td>
         <td class="p-3 text-gray-400 text-xs">${r.effective_from ? r.effective_from.replace('T', ' ').substring(0, 16) : '—'}</td>
         <td class="p-3">
           <span class="rule-status-badge inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-400">معطلة</span>
         </td>
         <td class="p-3">
-          <button onclick="activateRule(${r.id})" class="activate-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1 rounded transition">
-            {{ t("admin.rates.activate") }}
-          </button>
+          <div class="flex items-center justify-center gap-2">
+            <button data-id="${r.id}"
+                    data-label="${r.label}"
+                    data-first-hour="${firstHourVal}"
+                    data-subsequent-hour="${subsequentHourVal}"
+                    data-rate-per-hour="${ratePerHourVal}"
+                    data-grace="${r.grace_period_mins}"
+                    data-min-charge="${minChargeVal}"
+                    data-lost-penalty="${lostPenaltyVal}"
+                    onclick="handleEditBtnClick(this)"
+                    class="edit-action-btn bg-emerald-600/80 hover:bg-emerald-500 text-white text-xs px-2.5 py-1 rounded transition flex items-center gap-1 shadow cursor-pointer">
+              <span>✏️</span>
+              <span>تعديل</span>
+            </button>
+            <button onclick="activateRule(${r.id})" class="activate-btn bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-2.5 py-1 rounded transition cursor-pointer">
+              {{ t("admin.rates.activate") }}
+            </button>
+          </div>
         </td>
       `;
       tbody.prepend(tr);
 
       // Reset form and close
-      form.reset();
-      container.classList.add('hidden');
+      createForm.reset();
+      createContainer.classList.add('hidden');
+      showToast('تمت إضافة التعريفة بنجاح!');
     } catch (err) {
-      errDiv.textContent = err.message;
-      errDiv.classList.remove('hidden');
+      createErrDiv.textContent = err.message;
+      createErrDiv.classList.remove('hidden');
     }
   });
 </script>

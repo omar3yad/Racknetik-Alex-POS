@@ -31,6 +31,40 @@ class PricingRuleCreate(BaseModel):
         return self
 
 
+class PricingRuleUpdate(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    label: str | None = Field(default=None, max_length=100)
+    rate_per_hour_egp: float | None = Field(default=None, ge=0)
+    first_hour_charge_egp: float | None = Field(default=None, ge=0)
+    subsequent_hour_charge_egp: float | None = Field(default=None, ge=0)
+    minimum_charge_egp: float | None = Field(default=None, ge=0)
+    grace_period_mins: int | None = Field(default=None, ge=0)
+    lost_card_penalty_egp: float | None = Field(default=None, ge=0)
+    effective_from: datetime | None = None
+    effective_until: datetime | None = None
+
+    rate_per_hour: int | None = None
+    first_hour_charge: int | None = None
+    subsequent_hour_charge: int | None = None
+    minimum_charge: int | None = None
+    lost_card_penalty: int | None = None
+
+    @model_validator(mode="after")
+    def convert_egp_to_piastres(self) -> "PricingRuleUpdate":
+        if self.rate_per_hour_egp is not None:
+            self.rate_per_hour = round(self.rate_per_hour_egp * 100)
+        if self.first_hour_charge_egp is not None:
+            self.first_hour_charge = round(self.first_hour_charge_egp * 100)
+        if self.subsequent_hour_charge_egp is not None:
+            self.subsequent_hour_charge = round(self.subsequent_hour_charge_egp * 100)
+        if self.minimum_charge_egp is not None:
+            self.minimum_charge = round(self.minimum_charge_egp * 100)
+        if self.lost_card_penalty_egp is not None:
+            self.lost_card_penalty = round(self.lost_card_penalty_egp * 100)
+        return self
+
+
 class PricingRuleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,5 +86,6 @@ class PricingRuleResponse(BaseModel):
 
 __all__ = [
     "PricingRuleCreate",
+    "PricingRuleUpdate",
     "PricingRuleResponse",
 ]
