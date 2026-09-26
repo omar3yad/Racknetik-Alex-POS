@@ -11,6 +11,7 @@ from schemas.admin_reports import (
     GateStatusResponse,
     RevenueSummaryResponse,
     GateRevenueResponse,
+    ServiceTypeRevenueResponse,
     OperatorRevenueResponse,
     DailyRevenueResponse,
     ReportFilters,
@@ -161,6 +162,22 @@ class ReportService:
             operator_id=filters.operator_id,
         )
         return [GateRevenueResponse(**r) for r in rows]
+
+    async def get_revenue_by_service_type(
+        self, filters: ReportFilters
+    ) -> list[ServiceTypeRevenueResponse]:
+        """Returns revenue breakdown per service type (Tickets, Subscriptions, Lost Cards)."""
+        start_utc = (
+            cairo_date_to_utc_start(filters.start_date) if filters.start_date else None
+        )
+        end_utc = cairo_date_to_utc_end(filters.end_date) if filters.end_date else None
+
+        rows = await self.report_repo.get_revenue_by_service_type(
+            start_utc=start_utc,
+            end_utc=end_utc,
+            operator_id=filters.operator_id,
+        )
+        return [ServiceTypeRevenueResponse(**r) for r in rows]
 
     async def get_revenue_by_operator(
         self, filters: ReportFilters

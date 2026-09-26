@@ -43,6 +43,16 @@ class GateRevenueResponse(BaseModel):
     total_piastres: int
 
 
+class ServiceTypeRevenueResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=False)
+
+    service_type: str
+    label: str
+    session_count: int
+    total_piastres: int
+    percentage: float = 0.0
+
+
 class OperatorRevenueResponse(BaseModel):
     model_config = ConfigDict(from_attributes=False)
 

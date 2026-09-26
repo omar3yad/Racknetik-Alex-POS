@@ -89,30 +89,51 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- By Gate Table -->
+    <!-- By Service Type Table -->
     <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
-      <div class="p-4 border-b border-gray-700">
-        <h2 class="font-bold text-white text-base">الإيرادات حسب البوابات</h2>
+      <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+        <h2 class="font-bold text-white text-base">الإيرادات حسب نوع الخدمة</h2>
+        <span class="text-xs text-gray-400">تذاكر / اشتراكات / غرامات</span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-right text-sm">
           <thead class="bg-gray-900/60 text-gray-400 text-xs uppercase border-b border-gray-700">
             <tr>
-              <th class="p-3">رقم البوابة</th>
-              <th class="p-3">عدد الجلسات</th>
+              <th class="p-3">نوع الخدمة</th>
+              <th class="p-3">العدد</th>
               <th class="p-3">إجمالي الإيراد</th>
+              <th class="p-3">النسبة</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-700/60">
-            {% for g in by_gate %}
+            {% for st in by_service_type %}
             <tr class="hover:bg-gray-700/30">
-              <td class="p-3 font-semibold text-white">بوابة {{ g.gate_number | to_arabic_indic }}</td>
-              <td class="p-3 text-indigo-300">{{ g.session_count | to_arabic_indic }}</td>
-              <td class="p-3 font-bold text-emerald-400">{{ g.total_piastres | format_egp }}</td>
+              <td class="p-3">
+                <div class="flex items-center gap-2">
+                  {% if st.service_type == 'tickets' %}
+                    <span class="text-lg">🎟️</span>
+                  {% elif st.service_type == 'subscriptions' %}
+                    <span class="text-lg">💳</span>
+                  {% else %}
+                    <span class="text-lg">⚠️</span>
+                  {% endif %}
+                  <span class="font-semibold text-white">{{ st.label }}</span>
+                </div>
+              </td>
+              <td class="p-3 text-indigo-300">{{ st.session_count | to_arabic_indic }}</td>
+              <td class="p-3 font-bold text-emerald-400">{{ st.total_piastres | format_egp }}</td>
+              <td class="p-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-16 bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ st.percentage }}%;"></div>
+                  </div>
+                  <span class="text-xs text-gray-300 font-medium">{{ st.percentage | to_arabic_indic }}٪</span>
+                </div>
+              </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="3" class="p-4 text-center text-gray-400">لا توجد بيانات بوابات</td>
+              <td colspan="4" class="p-4 text-center text-gray-400">لا توجد بيانات خدمات</td>
             </tr>
             {% endfor %}
           </tbody>

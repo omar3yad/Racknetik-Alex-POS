@@ -1,6 +1,8 @@
 import asyncio
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal, Optional
+
+from pydantic import BeforeValidator
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
@@ -93,6 +95,26 @@ async def admin_dashboard(
     report_repo = ReportRepository(db)
     report_svc = ReportService(db, report_repo)
 
+    today = cairo_now().date()
+    admin_shift_repo = AdminShiftRepository(db)
+    today_shift_filters = ShiftFilters(start_date=today)
+    today_shifts, _ = await admin_shift_repo.get_shifts_filtered(
+        today_shift_filters, page=1, size=50
+    )
+
+    shift_ids = [s.id for s in today_shifts]
+    session_totals = {}
+    if shift_ids:
+        session_totals = await admin_shift_repo.get_shift_session_totals(shift_ids)
+
+    op_ids = list({s.operator_id for s in today_shifts})
+    operator_names = {}
+    if op_ids:
+        op_res = await db.execute(
+            select(User.id, User.full_name).where(User.id.in_(op_ids))
+        )
+        operator_names = {row.id: row.full_name for row in op_res.fetchall()}
+
     stats, gates = await asyncio.gather(
         report_svc.get_live_stats(),
         report_svc.get_gate_panel(),
@@ -121,6 +143,9 @@ async def admin_dashboard(
             "user": current_user,
             "stats": stats,
             "gates": gates,
+            "today_shifts": today_shifts,
+            "session_totals": session_totals,
+            "operator_names": operator_names,
             "long_stay_count": alerts["long_stay"],
             "overdue_shift_count": alerts["overdue_shifts"],
             "sub_stats": sub_stats,
@@ -133,14 +158,24 @@ async def admin_dashboard(
 # ---------------------------------------------------------------------------
 
 
+def _empty_to_none(v: str | None) -> str | None:
+    """Coerce empty-string query params (from HTML forms) to None."""
+    if v == "":
+        return None
+    return v
+
+
+_OptStr = Annotated[Optional[str], BeforeValidator(_empty_to_none)]
+
+
 @router.get("/shifts")
 async def admin_shifts_page(
     request: Request,
-    operator_id: int | None = Query(None),
-    gate_number: int | None = Query(None, ge=1, le=5),
-    status: Literal["open", "closed"] | None = Query(None),
-    start_date: date | None = Query(None),
-    end_date: date | None = Query(None),
+    operator_id: _OptStr = Query(None),
+    gate_number: _OptStr = Query(None),
+    status: _OptStr = Query(None),
+    start_date: _OptStr = Query(None),
+    end_date: _OptStr = Query(None),
     overdue: bool = Query(False),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
@@ -149,14 +184,14 @@ async def admin_shifts_page(
 ):
     try:
         filters = ShiftFilters(
-            operator_id=operator_id,
-            gate_number=gate_number,
-            status=status,
-            start_date=start_date,
-            end_date=end_date,
+            operator_id=int(operator_id) if operator_id else None,
+            gate_number=int(gate_number) if gate_number else None,
+            status=status if status in ("open", "closed") else None,
+            start_date=date.fromisoformat(start_date) if start_date else None,
+            end_date=date.fromisoformat(end_date) if end_date else None,
             overdue=overdue,
         )
-    except ValueError:
+    except (ValueError, TypeError):
         filters = ShiftFilters()
 
     admin_shift_repo = AdminShiftRepository(db)
@@ -252,11 +287,11 @@ async def admin_shift_detail_page(
 @router.get("/sessions")
 async def admin_sessions_page(
     request: Request,
-    start_date: date | None = Query(None),
-    end_date: date | None = Query(None),
-    gate_number: int | None = Query(None, ge=1, le=5),
-    operator_id: int | None = Query(None),
-    status: SessionStatus | None = Query(None),
+    start_date: _OptStr = Query(None),
+    end_date: _OptStr = Query(None),
+    gate_number: _OptStr = Query(None),
+    operator_id: _OptStr = Query(None),
+    status: _OptStr = Query(None),
     card_code: str | None = Query(None, max_length=50),
     plate_number: str | None = Query(None, max_length=30),
     long_stay: bool = Query(False),
@@ -266,17 +301,21 @@ async def admin_sessions_page(
     db: AsyncSession = Depends(get_db),
 ):
     try:
+        parsed_status = SessionStatus(status) if status else None
+    except ValueError:
+        parsed_status = None
+    try:
         filters = ReportFilters(
-            start_date=start_date,
-            end_date=end_date,
-            gate_number=gate_number,
-            operator_id=operator_id,
-            status=status,
-            card_code=card_code,
-            plate_number=plate_number,
+            start_date=date.fromisoformat(start_date) if start_date else None,
+            end_date=date.fromisoformat(end_date) if end_date else None,
+            gate_number=int(gate_number) if gate_number else None,
+            operator_id=int(operator_id) if operator_id else None,
+            status=parsed_status,
+            card_code=card_code or None,
+            plate_number=plate_number or None,
             long_stay=long_stay,
         )
-    except ValueError:
+    except (ValueError, TypeError):
         filters = ReportFilters()
 
     report_repo = ReportRepository(db)
@@ -375,32 +414,33 @@ async def admin_session_detail_page(
 @router.get("/reports/revenue")
 async def admin_revenue_report_page(
     request: Request,
-    start_date: date | None = Query(None),
-    end_date: date | None = Query(None),
-    gate_number: int | None = Query(None, ge=1, le=5),
-    operator_id: int | None = Query(None),
+    start_date: _OptStr = Query(None),
+    end_date: _OptStr = Query(None),
+    gate_number: _OptStr = Query(None),
+    operator_id: _OptStr = Query(None),
     current_user: User = Depends(require_admin_ui),
     db: AsyncSession = Depends(get_db),
 ):
     today = cairo_now().date()
-    s_date = start_date or today
-    e_date = end_date or today
     try:
+        s_date = date.fromisoformat(start_date) if start_date else today
+        e_date = date.fromisoformat(end_date) if end_date else today
         filters = ReportFilters(
             start_date=s_date,
             end_date=e_date,
-            gate_number=gate_number,
-            operator_id=operator_id,
+            gate_number=int(gate_number) if gate_number else None,
+            operator_id=int(operator_id) if operator_id else None,
         )
-    except ValueError:
+    except (ValueError, TypeError):
         filters = ReportFilters(start_date=today, end_date=today)
 
     report_repo = ReportRepository(db)
     report_svc = ReportService(db, report_repo)
 
-    summary, by_gate, by_operator, daily = await asyncio.gather(
+    summary, by_gate, by_service_type, by_operator, daily = await asyncio.gather(
         report_svc.get_revenue_summary(filters),
         report_svc.get_revenue_by_gate(filters),
+        report_svc.get_revenue_by_service_type(filters),
         report_svc.get_revenue_by_operator(filters),
         report_svc.get_daily_revenue(filters),
     )
@@ -419,6 +459,7 @@ async def admin_revenue_report_page(
             "filters": filters,
             "summary": summary,
             "by_gate": by_gate,
+            "by_service_type": by_service_type,
             "by_operator": by_operator,
             "daily": daily,
             "all_operators": all_operators,
@@ -435,11 +476,11 @@ async def admin_revenue_report_page(
 async def admin_print_report_page(
     request: Request,
     report_type: str = Query(...),
-    shift_id: int | None = Query(None),
-    start_date: date | None = Query(None),
-    end_date: date | None = Query(None),
-    gate_number: int | None = Query(None, ge=1, le=5),
-    operator_id: int | None = Query(None),
+    shift_id: _OptStr = Query(None),
+    start_date: _OptStr = Query(None),
+    end_date: _OptStr = Query(None),
+    gate_number: _OptStr = Query(None),
+    operator_id: _OptStr = Query(None),
     current_user: User = Depends(require_admin_ui),
     db: AsyncSession = Depends(get_db),
     settings=Depends(get_settings),
@@ -451,7 +492,8 @@ async def admin_print_report_page(
             headers={"X-Error-Code": "INVALID_REPORT_TYPE"},
         )
 
-    if report_type == "shift" and shift_id is None:
+    parsed_shift_id = int(shift_id) if shift_id else None
+    if report_type == "shift" and parsed_shift_id is None:
         raise HTTPException(
             status_code=422,
             detail="Shift ID is required for shift report",
@@ -459,10 +501,10 @@ async def admin_print_report_page(
         )
 
     filters = ReportFilters(
-        start_date=start_date,
-        end_date=end_date,
-        gate_number=gate_number,
-        operator_id=operator_id,
+        start_date=date.fromisoformat(start_date) if start_date else None,
+        end_date=date.fromisoformat(end_date) if end_date else None,
+        gate_number=int(gate_number) if gate_number else None,
+        operator_id=int(operator_id) if operator_id else None,
     )
 
     report_repo = ReportRepository(db)
@@ -489,15 +531,17 @@ async def admin_print_report_page(
             filters.start_date = today
         if not filters.end_date:
             filters.end_date = today
-        summary, by_gate, by_operator, daily = await asyncio.gather(
+        summary, by_gate, by_service_type, by_operator, daily = await asyncio.gather(
             report_svc.get_revenue_summary(filters),
             report_svc.get_revenue_by_gate(filters),
+            report_svc.get_revenue_by_service_type(filters),
             report_svc.get_revenue_by_operator(filters),
             report_svc.get_daily_revenue(filters),
         )
         report_data = {
             "summary": summary,
             "by_gate": by_gate,
+            "by_service_type": by_service_type,
             "by_operator": by_operator,
             "daily": daily,
         }

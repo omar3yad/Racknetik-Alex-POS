@@ -20,26 +20,28 @@
     </tbody>
   </table>
 
-  <!-- By Gate Table -->
-  <div class="section-title">الإيرادات حسب البوابات</div>
+  <!-- By Service Type Table -->
+  <div class="section-title">الإيرادات حسب نوع الخدمة</div>
   <table style="margin-bottom: 16px;">
     <thead>
       <tr>
-        <th>رقم البوابة</th>
-        <th>عدد الجلسات</th>
+        <th>نوع الخدمة</th>
+        <th>العدد</th>
         <th>إجمالي الإيراد</th>
+        <th>النسبة</th>
       </tr>
     </thead>
     <tbody>
-      {% for g in data.by_gate %}
+      {% for st in data.by_service_type %}
       <tr>
-        <td>بوابة {{ g.gate_number | to_arabic_indic }}</td>
-        <td>{{ g.session_count | to_arabic_indic }}</td>
-        <td style="font-weight: bold;">{{ g.total_piastres | format_egp }} ج.م</td>
+        <td style="font-weight: 600;">{{ st.label }}</td>
+        <td>{{ st.session_count | to_arabic_indic }}</td>
+        <td style="font-weight: bold;">{{ st.total_piastres | format_egp }} ج.م</td>
+        <td>{{ st.percentage | to_arabic_indic }}٪</td>
       </tr>
       {% else %}
       <tr>
-        <td colspan="3" style="text-align: center; color: #777;">لا توجد بيانات</td>
+        <td colspan="4" style="text-align: center; color: #777;">لا توجد بيانات</td>
       </tr>
       {% endfor %}
     </tbody>

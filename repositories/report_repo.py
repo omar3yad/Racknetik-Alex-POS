@@ -197,6 +197,118 @@ class ReportRepository:
             for r in rows
         ]
 
+    async def get_revenue_by_service_type(
+        self,
+        start_utc: datetime | None,
+        end_utc: datetime | None,
+        operator_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        """Returns revenue and counts broken down by service type:
+        1. Regular Tickets (Hourly / Casual)
+        2. Subscriptions (Monthly Plans)
+        3. Lost Cards / Penalties
+        """
+        # 1. Regular Tickets
+        ticket_clauses = [
+            "status = 'COMPLETED'",
+            "is_lost_card = FALSE",
+            "(is_subscribed = FALSE OR is_subscribed IS NULL)",
+        ]
+        ticket_params: dict[str, Any] = {}
+        if start_utc is not None:
+            ticket_clauses.append("exit_time >= :start_utc")
+            ticket_params["start_utc"] = start_utc
+        if end_utc is not None:
+            ticket_clauses.append("exit_time < :end_utc")
+            ticket_params["end_utc"] = end_utc
+        if operator_id is not None:
+            ticket_clauses.append("operator_id = :operator_id")
+            ticket_params["operator_id"] = operator_id
+
+        ticket_sql = text(
+            f"SELECT COUNT(*) AS cnt, COALESCE(SUM(amount_charged), 0) AS total "
+            f"FROM parking_sessions WHERE {' AND '.join(ticket_clauses)}"
+        )
+        ticket_row = (await self.db.execute(ticket_sql, ticket_params)).mappings().one()
+
+        # 2. Lost Cards
+        lost_clauses = [
+            "(is_lost_card = TRUE OR status = 'LOST_CARD' OR (lost_card_penalty_applied IS NOT NULL AND lost_card_penalty_applied > 0))"
+        ]
+        lost_params: dict[str, Any] = {}
+        if start_utc is not None:
+            lost_clauses.append("exit_time >= :start_utc")
+            lost_params["start_utc"] = start_utc
+        if end_utc is not None:
+            lost_clauses.append("exit_time < :end_utc")
+            lost_params["end_utc"] = end_utc
+        if operator_id is not None:
+            lost_clauses.append("operator_id = :operator_id")
+            lost_params["operator_id"] = operator_id
+
+        lost_sql = text(
+            f"SELECT COUNT(*) AS cnt, COALESCE(SUM(amount_charged), 0) AS total "
+            f"FROM parking_sessions WHERE {' AND '.join(lost_clauses)}"
+        )
+        lost_row = (await self.db.execute(lost_sql, lost_params)).mappings().one()
+
+        # 3. Monthly Subscriptions
+        sub_clauses = ["status = 'ACTIVE'"]
+        sub_params: dict[str, Any] = {}
+        if start_utc is not None:
+            sub_clauses.append("paid_at >= :start_utc")
+            sub_params["start_utc"] = start_utc
+        if end_utc is not None:
+            sub_clauses.append("paid_at < :end_utc")
+            sub_params["end_utc"] = end_utc
+        if operator_id is not None:
+            sub_clauses.append("collected_by = :operator_id")
+            sub_params["operator_id"] = operator_id
+
+        sub_sql = text(
+            f"SELECT COUNT(*) AS cnt, COALESCE(SUM(amount_paid_piastres), 0) AS total "
+            f"FROM subscriptions WHERE {' AND '.join(sub_clauses)}"
+        )
+        sub_row = (await self.db.execute(sub_sql, sub_params)).mappings().one()
+
+        t_cnt = int(ticket_row["cnt"] or 0)
+        t_total = int(ticket_row["total"] or 0)
+
+        s_cnt = int(sub_row["cnt"] or 0)
+        s_total = int(sub_row["total"] or 0)
+
+        l_cnt = int(lost_row["cnt"] or 0)
+        l_total = int(lost_row["total"] or 0)
+
+        grand_total = t_total + s_total + l_total
+
+        def pct(val: int) -> float:
+            return round((val / grand_total * 100), 1) if grand_total > 0 else 0.0
+
+        return [
+            {
+                "service_type": "tickets",
+                "label": "تذاكر عادية (انتظار بالساعة)",
+                "session_count": t_cnt,
+                "total_piastres": t_total,
+                "percentage": pct(t_total),
+            },
+            {
+                "service_type": "subscriptions",
+                "label": "اشتراكات شهرية (باقات وتجديد)",
+                "session_count": s_cnt,
+                "total_piastres": s_total,
+                "percentage": pct(s_total),
+            },
+            {
+                "service_type": "lost_cards",
+                "label": "غرامات وكروت مفقودة",
+                "session_count": l_cnt,
+                "total_piastres": l_total,
+                "percentage": pct(l_total),
+            },
+        ]
+
     async def get_revenue_by_operator(
         self,
         start_utc: datetime | None,
