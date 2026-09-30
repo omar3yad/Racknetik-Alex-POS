@@ -84,6 +84,7 @@ class SubscriptionPlanService:
 
         before_state = {
             "label": plan.label,
+            "duration_days": plan.duration_days,
             "price_piastres": plan.price_piastres,
             "description": plan.description,
             "max_entries_per_day": plan.max_entries_per_day,
@@ -97,6 +98,9 @@ class SubscriptionPlanService:
             if existing is not None and existing.id != plan_id:
                 raise PlanLabelAlreadyExistsError(f"Plan with label '{data.label}' already exists")
             updates["label"] = data.label
+
+        if data.duration_days is not None:
+            updates["duration_days"] = data.duration_days
 
         if data.price_egp is not None:
             updates["price_piastres"] = round(data.price_egp * 100)
@@ -117,6 +121,7 @@ class SubscriptionPlanService:
 
         after_state = {
             "label": plan.label,
+            "duration_days": plan.duration_days,
             "price_piastres": plan.price_piastres,
             "description": plan.description,
             "max_entries_per_day": plan.max_entries_per_day,

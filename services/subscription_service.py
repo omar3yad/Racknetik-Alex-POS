@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.subscription import Subscription, SubscriptionStatus
 from models.subscriber import Subscriber
 from models.parking_card import ParkingCard, CardStatus
+from models.subscription_plan import SubscriptionPlan
 from repositories.subscription_plan_repo import SubscriptionPlanRepository
 from repositories.subscription_repo import SubscriptionRepository
 from schemas.subscriptions import (
@@ -68,21 +69,50 @@ class SubscriptionService:
         self, data: SubscriptionCreate, admin_id: int
     ) -> Subscription:
         """Creates and activates a new subscription, linking a card to a subscriber."""
-        plan = await self.plan_repo.get_by_id(data.plan_id)
-        if plan is None:
-            raise PlanNotFoundError("Subscription plan not found")
-        if not plan.is_active:
-            raise PlanNotActiveError("Subscription plan is not active")
+        plan = None
+        if data.plan_id:
+            plan = await self.plan_repo.get_by_id(data.plan_id)
+            if plan is None:
+                raise PlanNotFoundError("Subscription plan not found")
+            if not plan.is_active:
+                raise PlanNotActiveError("Subscription plan is not active")
+        else:
+            # Look for existing custom plan or create one
+            custom_res = await self.db.execute(
+                select(SubscriptionPlan).where(SubscriptionPlan.label.ilike("%اشتراك مخصص%")).limit(1)
+            )
+            plan = custom_res.scalars().first()
+            if not plan:
+                plan = SubscriptionPlan(
+                    label="اشتراك مخصص (سعر حر)",
+                    duration_days=data.duration_days or 30,
+                    price_piastres=data.amount_paid_piastres,
+                    is_active=True,
+                    created_by=admin_id,
+                )
+                self.db.add(plan)
+                await self.db.flush()
 
-        # Fetch card directly by ID
-        result = await self.db.execute(
-            select(ParkingCard).where(ParkingCard.id == data.card_id).limit(1)
-        )
-        card = result.scalars().first()
+        # Fetch card by card_code or card_id
+        card = None
+        if data.card_code:
+            card_code_clean = str(data.card_code).strip()
+            result = await self.db.execute(
+                select(ParkingCard).where(ParkingCard.card_code == card_code_clean).limit(1)
+            )
+            card = result.scalars().first()
+        elif data.card_id:
+            result = await self.db.execute(
+                select(ParkingCard).where(ParkingCard.id == data.card_id).limit(1)
+            )
+            card = result.scalars().first()
+        else:
+            raise CardNotFoundError("يجب إدخال كود الكرت")
+
         if card is None:
-            raise CardNotFoundError("Card not found")
+            raise CardNotFoundError(f"الكرت رقم '{data.card_code or data.card_id}' غير موجود بالنظام")
         if card.status != CardStatus.AVAILABLE:
-            raise CardNotAvailableError("Card is not available for subscription")
+            raise CardNotAvailableError(f"الكرت رقم '{card.card_code}' غير متاح أو مستخدم بالفعل")
 
         # Check subscriber existence
         sub_res = await self.db.execute(
@@ -90,29 +120,30 @@ class SubscriptionService:
         )
         subscriber = sub_res.scalars().first()
         if subscriber is None:
-            raise SubscriberNotFoundError("Subscriber not found")
+            raise SubscriberNotFoundError("المشترك غير موجود")
 
         # Check active subscription uniqueness
         existing_sub = await self.subscription_repo.get_active_for_subscriber(data.subscriber_id)
         if existing_sub is not None:
             raise SubscriberAlreadyHasActiveSubscriptionError(
-                "Subscriber already has an active or pending subscription"
+                "المشترك لديه بالفعل اشتراك نشط أو معلق"
             )
 
         today = cairo_now().date()
-        end_date = data.start_date + timedelta(days=plan.duration_days)
+        duration = data.duration_days if (data.duration_days and not data.plan_id) else plan.duration_days
+        end_date = data.start_date + timedelta(days=duration)
         status = SubscriptionStatus.ACTIVE if data.start_date <= today else SubscriptionStatus.PENDING
 
         subscription = await self.subscription_repo.create(
             subscriber_id=data.subscriber_id,
-            plan_id=data.plan_id,
-            card_id=data.card_id,
+            plan_id=plan.id,
+            card_id=card.id,
             plate_number=subscriber.plate_number,
             start_date=data.start_date,
             end_date=end_date,
             status=status,
             amount_paid_piastres=data.amount_paid_piastres,
-            plan_price_snapshot=plan.price_piastres,
+            plan_price_snapshot=data.amount_paid_piastres if not data.plan_id else plan.price_piastres,
             paid_at=datetime.utcnow(),
             collected_by=admin_id,
             renewal_count=0,
@@ -137,11 +168,12 @@ class SubscriptionService:
                     "subscriber_id": subscription.subscriber_id,
                     "plan_id": subscription.plan_id,
                     "card_id": subscription.card_id,
-                    "start_date": subscription.start_date.isoformat(),
+                    "card_code": card.card_code,
                     "end_date": subscription.end_date.isoformat(),
                     "amount_paid_piastres": subscription.amount_paid_piastres,
                 },
             )
+
         return subscription
 
     async def renew_subscription(
@@ -310,11 +342,42 @@ class SubscriptionService:
             get_expired_unrenewed_count(),
         )
 
-        return SubscriptionDashboardStats(
-            active_subscriptions_count=active_cnt,
-            expiring_soon_count=expiring_cnt,
-            expired_unrenewed_count=unrenewed_cnt,
-        )
+    async def delete_subscription(self, subscription_id: int, admin_id: int) -> None:
+        """Deletes a subscription and frees any linked card back to AVAILABLE status."""
+        sub = await self.subscription_repo.get_by_id(subscription_id)
+        if sub is None:
+            raise SubscriptionNotFoundError("الاشتراك غير موجود")
+
+        # Free card if assigned
+        if sub.card_id:
+            card_res = await self.db.execute(
+                select(ParkingCard).where(ParkingCard.id == sub.card_id).limit(1)
+            )
+            card = card_res.scalars().first()
+            if card:
+                card.status = CardStatus.AVAILABLE
+
+        before_state = {
+            "subscriber_id": sub.subscriber_id,
+            "card_id": sub.card_id,
+            "status": sub.status.value if hasattr(sub.status, "value") else str(sub.status),
+            "start_date": str(sub.start_date),
+            "end_date": str(sub.end_date),
+        }
+
+        await self.db.delete(sub)
+        await self.db.commit()
+
+        if self.audit_service:
+            await self.audit_service.log(
+                actor_id=admin_id,
+                action="SUBSCRIPTION_DELETED",
+                entity_type="subscription",
+                entity_id=subscription_id,
+                before=before_state,
+                after=None,
+            )
 
 
 __all__ = ["SubscriptionService"]
+

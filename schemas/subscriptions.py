@@ -21,6 +21,7 @@ class PlanCreate(BaseModel):
 
 class PlanUpdate(BaseModel):
     label: str | None = Field(None, min_length=1, max_length=100)
+    duration_days: int | None = Field(None, ge=1)
     price_egp: float | None = Field(None, ge=0)
     max_entries_per_day: int | None = Field(None, ge=1)
     description: str | None = None
@@ -95,8 +96,10 @@ class SubscriptionResponse(BaseModel):
 
 class SubscriptionCreate(BaseModel):
     subscriber_id: int = Field(gt=0)
-    plan_id: int = Field(gt=0)
-    card_id: int = Field(gt=0)
+    plan_id: int | None = None
+    card_id: int | None = None
+    card_code: str | None = None
+    duration_days: int | None = Field(30, ge=1)
     start_date: date
     amount_paid_egp: float = Field(ge=0)
     notes: str | None = None

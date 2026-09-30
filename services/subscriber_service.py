@@ -1,7 +1,10 @@
 from datetime import timedelta
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.subscriber import Subscriber
+from models.subscription import Subscription
+from models.parking_card import ParkingCard, CardStatus
 from repositories.subscriber_repo import SubscriberRepository
 from repositories.subscription_repo import SubscriptionRepository
 from schemas.subscriptions import SubscriberCreate, SubscriberUpdate
@@ -147,6 +150,45 @@ class SubscriberService:
             enriched_list.append(subscriber)
 
         return enriched_list, total_count
+
+    async def delete_subscriber(self, subscriber_id: int, admin_id: int) -> None:
+        """Deletes a subscriber, deletes their subscriptions, and frees any assigned cards."""
+        subscriber = await self.subscriber_repo.get_by_id(subscriber_id)
+        if subscriber is None:
+            raise SubscriberNotFoundError("المشترك غير موجود")
+
+        # Get all subscriptions for this subscriber
+        sub_res = await self.db.execute(
+            select(Subscription).where(Subscription.subscriber_id == subscriber_id)
+        )
+        subscriptions = sub_res.scalars().all()
+
+        # Free all linked cards back to AVAILABLE
+        card_ids = [s.card_id for s in subscriptions if s.card_id]
+        if card_ids:
+            cards_res = await self.db.execute(
+                select(ParkingCard).where(ParkingCard.id.in_(card_ids))
+            )
+            for card in cards_res.scalars().all():
+                card.status = CardStatus.AVAILABLE
+
+        # Delete all subscriptions for subscriber
+        for s in subscriptions:
+            await self.db.delete(s)
+
+        # Delete subscriber
+        await self.db.delete(subscriber)
+        await self.db.commit()
+
+        if self.audit_service:
+            await self.audit_service.log(
+                actor_id=admin_id,
+                action="SUBSCRIBER_DELETED",
+                entity_type="subscriber",
+                entity_id=subscriber_id,
+                before={"full_name": subscriber.full_name, "plate_number": subscriber.plate_number},
+                after=None,
+            )
 
 
 __all__ = ["SubscriberService"]

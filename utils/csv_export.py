@@ -47,7 +47,8 @@ async def generate_sessions_csv(
         "رمز الكرت",
         "رقم اللوحة",
         "البوابة",
-        "العامل",
+        "عامل الدخول",
+        "عامل الخروج",
         "وقت الدخول",
         "وقت الخروج",
         "المدة (دقيقة)",
@@ -87,6 +88,11 @@ async def generate_sessions_csv(
             (
                 operator_names.get(session.operator_id, "")
                 if session.operator_id is not None
+                else ""
+            ),
+            (
+                operator_names.get(getattr(session, "exit_operator_id", None), "")
+                if getattr(session, "exit_operator_id", None) is not None
                 else ""
             ),
             (

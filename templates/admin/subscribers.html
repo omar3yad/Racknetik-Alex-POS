@@ -71,6 +71,7 @@
                         <th class="p-4">الحالة</th>
                         <th class="p-4">تاريخ الانتهاء</th>
                         <th class="p-4">المتبقي</th>
+                        <th class="p-4 text-center">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-800/60">
@@ -118,10 +119,17 @@
                             <span class="text-gray-600">—</span>
                             {% endif %}
                         </td>
+                        <td class="p-4 text-center" onclick="event.stopPropagation()">
+                            <button type="button" data-id="{{ sub.id }}" data-name="{{ sub.full_name }}" onclick="deleteSubscriberBtn(this)"
+                                class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white border border-red-500/30 transition">
+                                <span>🗑️</span>
+                                <span>حذف</span>
+                            </button>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="p-8 text-center text-gray-500">
+                        <td colspan="8" class="p-8 text-center text-gray-500">
                             لا توجد نتائج مطابقة لبحثك.
                         </td>
                     </tr>
@@ -155,4 +163,31 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+async function deleteSubscriberBtn(btn) {
+    const subscriberId = btn.getAttribute('data-id');
+    const name = btn.getAttribute('data-name');
+    if (!confirm(`هل أنت متأكد من حذف المشترك "${name}" نهائياً وجميع اشتراكاته؟`)) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/v1/subscriptions/subscribers/${subscriberId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        if (res.ok || res.status === 204) {
+            window.location.reload();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            alert(data.detail || 'حدث خطأ أثناء حذف المشترك');
+        }
+    } catch (err) {
+        alert('حدث خطأ في الاتصال بالسيرفر');
+    }
+}
+</script>
 {% endblock %}
+

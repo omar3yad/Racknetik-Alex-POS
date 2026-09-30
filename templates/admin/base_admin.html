@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -34,39 +35,49 @@
   </style>
   {% block head %}{% endblock %}
 </head>
+
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col font-sans">
   <div class="flex flex-1 min-h-screen">
     <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-gray-950 border-l border-gray-800 flex-shrink-0 transition-all duration-300 flex flex-col">
+    <aside id="sidebar"
+      class="w-64 bg-gray-950 border-l border-gray-800 flex-shrink-0 transition-all duration-300 flex flex-col">
       <div class="p-4 border-b border-gray-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
-          <img src="/static/icons/icon-32x32.png" alt="garage4u logo" class="w-8 h-8 rounded-lg shadow-lg shadow-cyan-500/20">
+          <img src="/static/icons/icon-32x32.png" alt="garage4u logo"
+            class="w-8 h-8 rounded-lg shadow-lg shadow-cyan-500/20">
           <span class="font-bold text-lg text-cyan-400">garage4u</span>
         </div>
-        <span class="text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700/40 px-2 py-0.5 rounded-full">مسؤول</span>
+        <span
+          class="text-xs bg-cyan-900/40 text-cyan-300 border border-cyan-700/40 px-2 py-0.5 rounded-full">مسؤول</span>
       </div>
       <nav class="p-3 space-y-1 text-sm font-medium flex-1 overflow-y-auto">
-        <a href="/ui/admin/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path == '/ui/admin/dashboard' %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/dashboard"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path == '/ui/admin/dashboard' %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>📊</span>
           <span>{{ t("admin.nav.dashboard", "لوحة التحكم") }}</span>
         </a>
-        <a href="/ui/admin/shifts" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/shifts') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/shifts"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/shifts') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>⏱️</span>
           <span>{{ t("admin.nav.shifts", "الشيفتات") }}</span>
         </a>
-        <a href="/ui/admin/sessions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/sessions') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/sessions"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/sessions') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>🚗</span>
-          <span>{{ t("admin.nav.sessions", "دخول و خروج") }}</span>
+          <span>{{ t("admin.nav.sessions", "دخول وخروج") }}</span>
         </a>
-        <a href="/ui/admin/reports/revenue" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/reports') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/reports/revenue"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/reports') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>📈</span>
           <span>{{ t("admin.nav.reports", "التقارير") }}</span>
         </a>
-        <a href="/ui/admin/rates" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/rates') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/rates"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/rates') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>💰</span>
           <span>{{ t("admin.nav.rates", "التعريفات") }}</span>
         </a>
-        <a href="/ui/admin/operators" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/operators') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/operators"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/operators') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>👷</span>
           <span>{{ t("admin.nav.operators", "المشغلين") }}</span>
         </a>
@@ -74,22 +85,26 @@
         <div class="pt-3 pb-1">
           <p class="px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">الاشتراكات</p>
         </div>
-        <a href="/ui/admin/subscribers" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/subscribers') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/subscribers"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/subscribers') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>👥</span>
           <span>{{ t("admin.nav.subscribers", "المشتركين") }}</span>
         </a>
-        <a href="/ui/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/plans') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/plans"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/plans') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>📋</span>
           <span>{{ t("admin.nav.plans", "خطط الاشتراك") }}</span>
         </a>
-        <a href="/ui/admin/subscriptions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/subscriptions') %}bg-cyan-600/20 text-cyan-400 font-semibold border-r-2 border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
+        <a href="/ui/admin/subscriptions"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {% if request and request.url.path.startswith('/ui/admin/subscriptions') %}bg-cyan-600/20 text-cyan-400 font-semibold border-2  border-cyan-500{% else %}text-gray-300 hover:bg-gray-800 hover:text-white{% endif %}">
           <span>🎫</span>
           <span>{{ t("admin.nav.subscriptions", "الاشتراكات") }}</span>
         </a>
 
         <div class="pt-4 mt-4 border-t border-gray-800">
           <form method="POST" action="/ui/logout">
-            <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-950/40 hover:text-red-300 transition text-right">
+            <button type="submit"
+              class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-950/40 hover:text-red-300 transition text-right">
               <span>🚪</span>
               <span>{{ t("admin.nav.logout", "تسجيل خروج") }}</span>
             </button>
@@ -101,9 +116,11 @@
     <!-- Main Content Area -->
     <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
       <!-- Topbar -->
-      <header class="h-14 border-b border-gray-800 bg-gray-950/60 backdrop-blur px-4 flex items-center justify-between flex-shrink-0">
+      <header
+        class="h-14 border-b border-gray-800 bg-gray-950/60 backdrop-blur px-4 flex items-center justify-between flex-shrink-0">
         <div class="flex items-center gap-3">
-          <button id="sidebar-toggle" class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition focus:outline-none">
+          <button id="sidebar-toggle"
+            class="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition focus:outline-none">
             <span class="text-xl leading-none">☰</span>
           </button>
           <span class="text-sm font-semibold text-gray-300">مواقف السيارات الذكية</span>
@@ -117,7 +134,7 @@
       <!-- Content Container -->
       <section class="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
         {% block content %}
-          {% block admin_content %}{% endblock %}
+        {% block admin_content %}{% endblock %}
         {% endblock %}
       </section>
     </main>
@@ -149,4 +166,5 @@
     }
   </script>
 </body>
+
 </html>

@@ -7,11 +7,32 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-white">{{ t("subscriptions.subscriber.new") if t is defined else "إضافة مشترك جديد" }}</h1>
-            <p class="text-sm text-gray-400 mt-1">تسجيل بيانات العميل ورقم لوحة السيارة</p>
+            <p class="text-sm text-gray-400 mt-1">الخطوة ١ من ٢: تسجيل البيانات الأساسية للمشترك</p>
         </div>
         <a href="/ui/admin/subscribers" class="text-sm text-gray-400 hover:text-white transition">
             ← العودة للقائمة
         </a>
+    </div>
+
+    <!-- 2-Step Progress Indicator -->
+    <div class="grid grid-cols-2 gap-3 text-xs font-semibold">
+        <div class="bg-indigo-600/20 border border-indigo-500/50 text-indigo-300 rounded-xl p-3 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">١</span>
+            <span>الخطوة الأولى: بيانات العميل واللوحة (الحالية)</span>
+        </div>
+        <div class="bg-gray-850 border border-gray-800 text-gray-500 rounded-xl p-3 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-gray-800 text-gray-400 flex items-center justify-center font-bold text-xs">٢</span>
+            <span>الخطوة الثانية: تخصيص الكرت واختيار الخطة</span>
+        </div>
+    </div>
+
+    <!-- Info Banner -->
+    <div class="bg-cyan-950/40 border border-cyan-800/50 rounded-xl p-4 text-xs text-cyan-200 flex items-start gap-3">
+        <span class="text-base">ℹ️</span>
+        <div>
+            <p class="font-bold text-cyan-100 mb-0.5">تسجيل البيانات الأساسية:</p>
+            <p class="text-cyan-300/90 leading-relaxed">قم بإدخال بيانات المشترك ورقم اللوحة، ثم اضغط على زر المتابعة بالأسفل للانتقال مباشرة لصفحة تخصيص كرت الدخول واختيار الباقة أو كتابة السعر المناسب.</p>
+        </div>
     </div>
 
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
@@ -28,7 +49,10 @@
                 <label class="block text-sm font-semibold text-gray-300 mb-1.5">رقم اللوحة (مطلوب)</label>
                 <input type="text" id="subPlateNumber" dir="rtl" required placeholder="مثال: س ص ع ١ ٢ ٣ ٤"
                     class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 font-mono text-lg">
-                <p class="text-xs text-gray-500 mt-1">سيتم تطبيع الأرقام والحروف تلقائياً للتحقق والمقارنة</p>
+                <div class="mt-1.5 p-2.5 rounded-lg bg-gray-800/70 border border-gray-700/50 text-xs text-gray-300 flex items-center gap-2">
+                    <span class="text-amber-400 font-bold">لماذا رقم اللوحة مطلوب؟</span>
+                    <span>لربط السيارة بالاشتراك والتحقق منها عند البوابات، ومنع استخدام كرت المشترك لأي سيارة أخرى غير مسجلة.</span>
+                </div>
             </div>
 
             <div>
@@ -45,8 +69,8 @@
 
             <div class="pt-4">
                 <button type="submit" id="submitSubBtn"
-                    class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3.5 px-6 rounded-xl transition text-base shadow-lg shadow-green-900/40 flex items-center justify-center gap-2">
-                    <span>{{ t("subscriptions.subscriber.new") if t is defined else "إضافة المشترك" }}</span>
+                    class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 px-6 rounded-xl transition text-base shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-2">
+                    <span>حفظ ومتابعة لاختيار الخطة وتخصيص الكرت ←</span>
                 </button>
             </div>
         </form>

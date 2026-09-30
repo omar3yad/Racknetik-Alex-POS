@@ -29,10 +29,10 @@
   <table style="margin-bottom: 16px;">
     <thead>
       <tr>
-        <th>إجمالي الجلسات</th>
-        <th>جلسات مكتملة</th>
+        <th>إجمالي عمليات الشيفت</th>
+        <th>عمليات مكتملة (خروج)</th>
         <th>كروت مفقودة</th>
-        <th>جلسات نشطة</th>
+        <th>سيارات بالداخل (دخول)</th>
         <th>الإيراد المحسوب</th>
         <th>النقدية عند الإغلاق</th>
         <th>الفارق</th>
@@ -52,13 +52,15 @@
   </table>
 
   <!-- Sessions Table -->
-  <div class="section-title">قائمة جلسات الشيفت ({{ data.total_sessions | to_arabic_indic }} جلسة)</div>
+  <div class="section-title">سجل حركات الشيفت - دخول وخروج ({{ data.total_sessions | to_arabic_indic }} حركة)</div>
   <table>
     <thead>
       <tr>
         <th>رقم الجلسة</th>
         <th>كود الكرت</th>
         <th>رقم اللوحة</th>
+        <th>عامل الدخول</th>
+        <th>عامل الخروج</th>
         <th>وقت الدخول</th>
         <th>وقت الخروج</th>
         <th>المدة</th>
@@ -71,6 +73,8 @@
         <td>#{{ s.id | zfill(8) | to_arabic_indic }}</td>
         <td>{{ s.card_code }}</td>
         <td>{{ s.plate_number or "—" }}</td>
+        <td>{{ data.operator_names.get(s.operator_id, "—") }}</td>
+        <td>{{ data.operator_names.get(s.exit_operator_id, "—") if s.exit_operator_id else "—" }}</td>
         <td>{{ s.entry_time | format_datetime }}</td>
         <td>{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
         <td>{{ s.duration_minutes | format_duration if s.duration_minutes is not none else "—" }}</td>
@@ -78,7 +82,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="7" style="text-align: center; color: #777;">لا توجد جلسات في هذا الشيفت</td>
+        <td colspan="9" style="text-align: center; color: #777;">لا توجد جلسات في هذا الشيفت</td>
       </tr>
       {% endfor %}
     </tbody>

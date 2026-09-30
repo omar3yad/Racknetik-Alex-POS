@@ -7,7 +7,8 @@
         <th>كود الكرت</th>
         <th>رقم اللوحة</th>
         <th>البوابة</th>
-        <th>العامل</th>
+        <th>عامل الدخول</th>
+        <th>عامل الخروج</th>
         <th>الحالة</th>
         <th>وقت الدخول</th>
         <th>وقت الخروج</th>
@@ -23,6 +24,7 @@
         <td>{{ s.plate_number or "—" }}</td>
         <td>بوابة {{ s.gate_number | to_arabic_indic }}</td>
         <td>{{ data.operator_names.get(s.operator_id, "—") }}</td>
+        <td>{{ data.operator_names.get(s.exit_operator_id, "—") if s.exit_operator_id else "—" }}</td>
         <td>{{ s.status | session_status_label }}</td>
         <td>{{ s.entry_time | format_datetime }}</td>
         <td>{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
@@ -31,7 +33,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="10" style="text-align: center; color: #777;">لا توجد جلسات مسجلة</td>
+        <td colspan="11" style="text-align: center; color: #777;">لا توجد جلسات مسجلة</td>
       </tr>
       {% endfor %}
     </tbody>

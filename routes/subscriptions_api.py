@@ -266,6 +266,28 @@ async def update_subscriber(
     return {"data": SubscriberResponse.model_validate(subscriber).model_dump(mode="json")}
 
 
+@router.delete("/subscribers/{subscriber_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_subscriber(
+    subscriber_id: int,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    subscriber_repo = SubscriberRepository(db)
+    audit_service = AuditService(db)
+    subscriber_service = SubscriberService(db, subscriber_repo, PlateService(), audit_service)
+
+    try:
+        await subscriber_service.delete_subscriber(subscriber_id, current_user.id)
+    except SubscriberNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+            headers={"X-Error-Code": "SUBSCRIBER_NOT_FOUND"},
+        )
+    return None
+
+
+
 # ----------------------------------------------------
 # 8c — Subscriptions API
 # ----------------------------------------------------
@@ -430,3 +452,27 @@ async def cancel_subscription(
         )
 
     return {"data": SubscriptionResponse.model_validate(sub).model_dump(mode="json")}
+
+
+@router.delete("/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_subscription(
+    subscription_id: int,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    sub_repo = SubscriptionRepository(db)
+    plan_repo = SubscriptionPlanRepository(db)
+    card_service = CardService(db)
+    audit_service = AuditService(db)
+    sub_service = SubscriptionService(db, sub_repo, plan_repo, card_service, audit_service)
+
+    try:
+        await sub_service.delete_subscription(subscription_id, current_user.id)
+    except SubscriptionNotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=e.message,
+            headers={"X-Error-Code": "SUBSCRIPTION_NOT_FOUND"},
+        )
+    return None
+

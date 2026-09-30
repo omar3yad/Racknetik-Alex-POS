@@ -260,6 +260,17 @@ async def admin_shift_detail_page(
         shift_id, page=page, size=size
     )
 
+    op_ids = list(
+        {s.operator_id for s in sessions if s.operator_id}
+        | {s.exit_operator_id for s in sessions if s.exit_operator_id}
+    )
+    operator_names = {}
+    if op_ids:
+        op_res = await db.execute(
+            select(User.id, User.full_name).where(User.id.in_(op_ids))
+        )
+        operator_names = {row.id: row.full_name for row in op_res.fetchall()}
+
     operator = await db.get(User, shift.operator_id)
 
     templates = request.app.state.templates
@@ -273,6 +284,7 @@ async def admin_shift_detail_page(
             "summary": summary,
             "sessions": sessions,
             "total_sessions": total_sessions,
+            "operator_names": operator_names,
             "page": page,
             "size": size,
         },
@@ -322,7 +334,10 @@ async def admin_sessions_page(
     report_svc = ReportService(db, report_repo)
     sessions, total = await report_svc.get_sessions_filtered(filters, page, size)
 
-    op_ids = list({s.operator_id for s in sessions if s.operator_id})
+    op_ids = list(
+        {s.operator_id for s in sessions if s.operator_id}
+        | {s.exit_operator_id for s in sessions if s.exit_operator_id}
+    )
     operator_names = {}
     if op_ids:
         op_res = await db.execute(
@@ -557,12 +572,23 @@ async def admin_print_report_page(
         sessions, total = await session_repo.get_by_shift(shift_id, page=1, size=500)
         truncated = total > 500
         operator = await db.get(User, shift.operator_id)
+        op_ids = list(
+            {s.operator_id for s in sessions if s.operator_id}
+            | {s.exit_operator_id for s in sessions if s.exit_operator_id}
+        )
+        operator_names = {}
+        if op_ids:
+            op_res = await db.execute(
+                select(User.id, User.full_name).where(User.id.in_(op_ids))
+            )
+            operator_names = {row.id: row.full_name for row in op_res.fetchall()}
         report_data = {
             "shift": shift,
             "operator": operator,
             "summary": summary,
             "sessions": sessions,
             "total_sessions": total,
+            "operator_names": operator_names,
         }
 
     templates = request.app.state.templates
