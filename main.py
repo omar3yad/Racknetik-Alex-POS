@@ -177,6 +177,21 @@ app.include_router(ui_subscriptions_router)
 async def root_redirect():
     return RedirectResponse("/ui/login", status_code=303)
 
+@app.get("/proposal", include_in_schema=False)
+@app.get("/proposal.html", include_in_schema=False)
+async def proposal_page():
+    from fastapi.responses import FileResponse
+    return FileResponse("proposal.html", media_type="text/html")
+
+@app.get("/proposal-general", include_in_schema=False)
+@app.get("/proposal-general.html", include_in_schema=False)
+@app.get("/proposal/general", include_in_schema=False)
+@app.get("/general-proposal", include_in_schema=False)
+async def proposal_general_page():
+    from fastapi.responses import FileResponse
+    return FileResponse("proposal-general.html", media_type="text/html")
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     from fastapi.responses import FileResponse
@@ -186,3 +201,5 @@ async def favicon():
 async def apple_touch_icon():
     from fastapi.responses import FileResponse
     return FileResponse("static/apple-touch-icon.png", media_type="image/png")
+
+
