@@ -119,6 +119,7 @@
             <th class="p-3">وقت الخروج</th>
             <th class="p-3">المدة</th>
             <th class="p-3">المبلغ</th>
+            <th class="p-3 text-center">الإجراءات</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-700/60">
@@ -139,10 +140,26 @@
             <td class="p-3 text-gray-400 text-xs">{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
             <td class="p-3 text-gray-300">{{ s.duration_minutes | format_duration if s.duration_minutes is not none else "—" }}</td>
             <td class="p-3 font-semibold text-emerald-400">{{ s.amount_charged | format_egp if s.amount_charged is not none else "—" }}</td>
+            <td class="p-3 text-center" onclick="event.stopPropagation()">
+              {% if s.status.value == 'ACTIVE' or s.status == 'ACTIVE' %}
+              <button type="button" 
+                data-id="{{ s.id }}" 
+                data-card="{{ s.card_code }}" 
+                data-plate="{{ s.plate_number or '—' }}" 
+                data-entry="{{ s.entry_time | format_datetime }}"
+                onclick="openOverrideModalBtn(this)"
+                class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-600/20 text-amber-300 hover:bg-amber-600 hover:text-white border border-amber-500/30 transition">
+                <span>⚙️</span>
+                <span>إغلاق إداري</span>
+              </button>
+              {% else %}
+              <span class="text-gray-600 text-xs">—</span>
+              {% endif %}
+            </td>
           </tr>
           {% else %}
           <tr>
-            <td colspan="11" class="p-6 text-center text-gray-400">{{ t("admin.table.no_results") }}</td>
+            <td colspan="12" class="p-6 text-center text-gray-400">{{ t("admin.table.no_results") }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -170,4 +187,124 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Modal: Admin Session Override (Fixed Popup Overlay) -->
+<div id="overrideModal" onclick="if(event.target === this) closeOverrideModal()"
+  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 99999; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; padding: 16px;">
+  
+  <div class="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-right" dir="rtl"
+    style="max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.85);">
+    
+    <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <span>⚙️</span>
+        <span>إغلاق وتسوية الجلسة إدارياً</span>
+      </h3>
+      <button type="button" onclick="closeOverrideModal()" class="text-gray-400 hover:text-white text-xl font-bold p-1">✕</button>
+    </div>
+
+    <div id="modalAlertError" class="hidden bg-red-950/60 border border-red-500/60 text-red-300 px-3 py-2 rounded-lg text-xs"></div>
+
+    <div class="bg-gray-800/60 rounded-xl p-3 grid grid-cols-2 gap-2 text-xs">
+      <div><span class="text-gray-400">رقم الجلسة:</span> <strong id="modalSessionId" class="text-white font-mono"></strong></div>
+      <div><span class="text-gray-400">كود الكرت:</span> <strong id="modalCardCode" class="text-indigo-300 font-mono"></strong></div>
+      <div><span class="text-gray-400">رقم اللوحة:</span> <span id="modalPlateNumber" class="text-white"></span></div>
+      <div><span class="text-gray-400">وقت الدخول:</span> <span id="modalEntryTime" class="text-gray-300"></span></div>
+    </div>
+
+    <div class="bg-amber-950/30 border border-amber-800/50 rounded-xl p-3 text-xs text-amber-200">
+      💡 <strong>تنبيه:</strong> سيتم إنهاء الجلسة فوراً وتحرير الكرت ليصبح <strong>متاحاً (AVAILABLE)</strong>، وتحديد المبلغ المحسوب (الافتراضي ٠ ج.م لتجنب التأثير على التقارير المالية).
+    </div>
+
+    <form id="overrideModalForm" onsubmit="submitOverrideModal(event)" class="space-y-4">
+      <input type="hidden" id="modalInputSessionId">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">المبلغ المحصل الفعلي (ج.م)</label>
+        <input type="number" step="0.01" min="0" id="modalInputAmount" value="0.00" required
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white font-mono text-base focus:outline-none focus:border-amber-500">
+        <p class="text-xs text-gray-500 mt-1">اتركه 0.00 إذا كانت الجلسة خطأ وتريد تصفير حسابها تماماً</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">سبب الإغلاق / ملاحظة التدخل الإداري</label>
+        <input type="text" id="modalInputNote" required placeholder="مثلاً: كارت بالخطأ من العامل / تسوية مع الإدارة..."
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500">
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button type="button" onclick="closeOverrideModal()" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-xl text-sm transition">
+          إلغاء
+        </button>
+        <button type="submit" id="modalSubmitBtn" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-5 py-2 rounded-xl text-sm transition flex items-center gap-2">
+          <span>تأكيد الإغلاق وتحرير الكرت</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openOverrideModalBtn(btn) {
+  var id = btn.getAttribute('data-id');
+  var card = btn.getAttribute('data-card');
+  var plate = btn.getAttribute('data-plate');
+  var entry = btn.getAttribute('data-entry');
+
+  document.getElementById('modalInputSessionId').value = id;
+  document.getElementById('modalSessionId').innerText = '#' + id;
+  document.getElementById('modalCardCode').innerText = card;
+  document.getElementById('modalPlateNumber').innerText = plate;
+  document.getElementById('modalEntryTime').innerText = entry;
+  document.getElementById('modalInputAmount').value = '0.00';
+  document.getElementById('modalInputNote').value = 'كارت مسجل بالخطأ - تسوية إدارية';
+  document.getElementById('modalAlertError').classList.add('hidden');
+  document.getElementById('modalAlertError').innerText = '';
+  
+  var modal = document.getElementById('overrideModal');
+  modal.style.display = 'flex';
+}
+
+function closeOverrideModal() {
+  var modal = document.getElementById('overrideModal');
+  modal.style.display = 'none';
+}
+
+async function submitOverrideModal(e) {
+  e.preventDefault();
+  var id = document.getElementById('modalInputSessionId').value;
+  var amount = parseFloat(document.getElementById('modalInputAmount').value) || 0;
+  var note = document.getElementById('modalInputNote').value.trim();
+  var btn = document.getElementById('modalSubmitBtn');
+  var errDiv = document.getElementById('modalAlertError');
+
+  btn.disabled = true;
+  errDiv.classList.add('hidden');
+
+  try {
+    var res = await fetch('/api/v1/admin/sessions/' + id + '/override-close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount_charged_egp: amount,
+        override_note: note
+      })
+    });
+
+    var data = await res.json();
+    if (res.ok && data.success) {
+      window.location.reload();
+    } else {
+      errDiv.innerText = data.detail || data.message || 'حدث خطأ أثناء إغلاق الجلسة';
+      errDiv.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    errDiv.innerText = 'تعذر الاتصال بالخادم';
+    errDiv.classList.remove('hidden');
+    btn.disabled = false;
+  }
+}
+</script>
 {% endblock %}
+
+

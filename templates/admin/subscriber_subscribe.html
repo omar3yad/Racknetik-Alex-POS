@@ -41,7 +41,7 @@
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 md:p-8 shadow-xl">
         <div id="subscribeError" class="hidden mb-6 bg-red-950/60 border border-red-500/60 text-red-300 px-4 py-3 rounded-lg text-sm"></div>
 
-        <form id="subscribeForm" onsubmit="handleCreateSubscription(event)" class="space-y-5">
+        <form id="subscribeForm" data-subscriber-id="{{ subscriber.id }}" onsubmit="handleCreateSubscription(event)" class="space-y-5">
             <!-- Plan Selection (Optional / Custom) -->
             <div>
                 <label class="block text-sm font-semibold text-gray-300 mb-1.5">باقة الاشتراك</label>
@@ -68,30 +68,31 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold text-gray-300 mb-1.5">تاريخ البداية (مطلوب)</label>
-                    <input type="date" id="subStartDate" onchange="calculateComputedEndDate()" required
+                    <input type="date" id="subStartDate" onchange="onStartDateChanged()" required
                         class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-300 mb-1.5">المبلغ المدفوع (ج.م) (مطلوب)</label>
-                    <input type="number" step="0.01" min="0" id="subAmountPaid" required placeholder="مثلاً 1500"
-                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-base focus:outline-none focus:border-indigo-500">
+                    <label class="block text-sm font-semibold text-gray-300 mb-1.5">تاريخ الانتهاء (نهاية الشهر)</label>
+                    <input type="date" id="subEndDate" onchange="updateSummaryPreview()" required
+                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-indigo-300 font-mono font-bold focus:outline-none focus:border-indigo-500">
                 </div>
             </div>
 
-            <!-- Custom Duration (Days) -->
-            <div id="durationWrapper" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-300 mb-1.5">مدة الاشتراك (بالأيام)</label>
-                    <input type="number" min="1" id="subDurationDays" value="30" onchange="calculateComputedEndDate()" onkeyup="calculateComputedEndDate()"
-                        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white font-mono focus:outline-none focus:border-indigo-500">
+            <!-- Auto end-of-month info alert & summary -->
+            <div id="endPreviewBox" class="bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2 text-indigo-200">
+                    <span>💡</span>
+                    <span>ينتهي الاشتراك في <strong>آخر يوم من الشهر</strong> (<span id="previewMonthText">—</span>)</span>
                 </div>
-                <div class="flex items-end">
-                    <!-- Computed Expiration Preview -->
-                    <div id="endPreviewBox" class="w-full bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-3 flex items-center justify-between text-sm">
-                        <span class="text-gray-300 text-xs">تاريخ الانتهاء:</span>
-                        <span id="computedEndDate" class="font-mono font-bold text-indigo-300 text-sm">—</span>
-                    </div>
+                <div class="text-gray-300">
+                    المدة المحسوبة: <span id="computedDaysCount" class="font-bold text-white font-mono">—</span> يوم
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-semibold text-gray-300 mb-1.5">المبلغ المدفوع (ج.م) (مطلوب)</label>
+                <input type="number" step="0.01" min="0" id="subAmountPaid" required placeholder="مثلاً 1500"
+                    class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white font-mono text-base focus:outline-none focus:border-indigo-500">
             </div>
 
             <div>
@@ -111,43 +112,75 @@
 </div>
 
 <script>
-// Set today default date in YYYY-MM-DD
+// Calculate end of calendar month for a given YYYY-MM-DD
+function getEndOfMonth(dateStr) {
+    if (!dateStr) return '';
+    var parts = dateStr.split('-');
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10); // 1-12
+    var lastDay = new Date(y, m, 0).getDate();
+    var mStr = m < 10 ? '0' + m : '' + m;
+    var dStr = lastDay < 10 ? '0' + lastDay : '' + lastDay;
+    return y + '-' + mStr + '-' + dStr;
+}
+
+// Format date into readable Arabic month text
+function getArabicMonthName(dateStr) {
+    if (!dateStr) return '';
+    var d = new Date(dateStr);
+    try {
+        return d.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+    } catch (e) {
+        return dateStr;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var today = new Date().toISOString().split('T')[0];
     document.getElementById('subStartDate').value = today;
-    calculateComputedEndDate();
+    document.getElementById('subEndDate').value = getEndOfMonth(today);
+    updateSummaryPreview();
 });
+
+function onStartDateChanged() {
+    var startDateVal = document.getElementById('subStartDate').value;
+    if (startDateVal) {
+        document.getElementById('subEndDate').value = getEndOfMonth(startDateVal);
+    }
+    updateSummaryPreview();
+}
 
 function onPlanSelected() {
     var planSelect = document.getElementById('subPlanSelect');
     var selectedOption = planSelect.options[planSelect.selectedIndex];
     if (selectedOption && selectedOption.value) {
         var price = selectedOption.getAttribute('data-price');
-        var duration = selectedOption.getAttribute('data-duration');
         if (price) {
             document.getElementById('subAmountPaid').value = price;
         }
-        if (duration) {
-            document.getElementById('subDurationDays').value = duration;
-        }
     }
-    calculateComputedEndDate();
+    updateSummaryPreview();
 }
 
-function calculateComputedEndDate() {
+function updateSummaryPreview() {
     var startDateVal = document.getElementById('subStartDate').value;
-    var durationVal = parseInt(document.getElementById('subDurationDays').value) || 30;
-    var previewEl = document.getElementById('computedEndDate');
+    var endDateVal = document.getElementById('subEndDate').value;
+    var previewMonthText = document.getElementById('previewMonthText');
+    var computedDaysCount = document.getElementById('computedDaysCount');
 
-    if (!startDateVal) {
-        previewEl.innerText = '—';
+    if (!startDateVal || !endDateVal) {
+        previewMonthText.innerText = '—';
+        computedDaysCount.innerText = '—';
         return;
     }
 
-    var d = new Date(startDateVal);
-    d.setDate(d.getDate() + durationVal);
-    var endIso = d.toISOString().split('T')[0];
-    previewEl.innerText = endIso;
+    previewMonthText.innerText = getArabicMonthName(endDateVal);
+
+    var d1 = new Date(startDateVal);
+    var d2 = new Date(endDateVal);
+    var diffMs = d2 - d1;
+    var diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
+    computedDaysCount.innerText = diffDays > 0 ? diffDays : 0;
 }
 
 async function handleCreateSubscription(e) {
@@ -162,12 +195,19 @@ async function handleCreateSubscription(e) {
     var planId = planSelectVal ? parseInt(planSelectVal) : null;
     var cardCode = document.getElementById('subCardCode').value.trim();
     var startDate = document.getElementById('subStartDate').value;
-    var durationDays = parseInt(document.getElementById('subDurationDays').value) || 30;
+    var endDate = document.getElementById('subEndDate').value;
     var amountPaidEgp = parseFloat(document.getElementById('subAmountPaid').value);
     var notes = document.getElementById('subNotes').value.trim() || null;
 
     if (!cardCode) {
         errorDiv.innerText = 'يرجى إدخال رقم / كود الكرت';
+        errorDiv.classList.remove('hidden');
+        btn.disabled = false;
+        return;
+    }
+
+    if (!startDate || !endDate) {
+        errorDiv.innerText = 'يرجى تحديد تاريخ البداية وتاريخ الانتهاء';
         errorDiv.classList.remove('hidden');
         btn.disabled = false;
         return;
@@ -180,12 +220,14 @@ async function handleCreateSubscription(e) {
         return;
     }
 
+    var subscriberId = parseInt(document.getElementById('subscribeForm').getAttribute('data-subscriber-id'), 10);
+
     var payload = {
-        subscriber_id: {{ subscriber.id }},
+        subscriber_id: subscriberId,
         plan_id: planId,
         card_code: cardCode,
-        duration_days: durationDays,
         start_date: startDate,
+        end_date: endDate,
         amount_paid_egp: amountPaidEgp,
         notes: notes
     };
@@ -199,7 +241,7 @@ async function handleCreateSubscription(e) {
 
         var data = await res.json();
         if (res.ok) {
-            window.location.href = '/ui/admin/subscribers/{{ subscriber.id }}';
+            window.location.href = '/ui/admin/subscribers/' + subscriberId;
         } else {
             errorDiv.innerText = data.detail || 'حدث خطأ أثناء إنشاء الاشتراك';
             errorDiv.classList.remove('hidden');
@@ -213,3 +255,5 @@ async function handleCreateSubscription(e) {
 }
 </script>
 {% endblock %}
+
+

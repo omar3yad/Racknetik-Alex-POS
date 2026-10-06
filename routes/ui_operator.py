@@ -131,15 +131,17 @@ async def open_shift(
     shift_service: ShiftService = Depends(get_shift_service),
 ):
     opening_cash_piastres = opening_cash_egp * 100
+    gate = current_user.gate_number or 2
     try:
         await shift_service.open_shift(
             operator_id=current_user.id,
-            gate_number=current_user.gate_number,
+            gate_number=gate,
             opening_cash_egp=opening_cash_piastres,
         )
     except ShiftAlreadyOpenError:
         pass
     return RedirectResponse("/ui/operator/dashboard", status_code=303)
+
 
 
 @router.get("/shift/end")

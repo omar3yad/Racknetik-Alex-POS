@@ -12,10 +12,12 @@ from schemas.parking_session import (
     SessionOpenRequest,
     SessionExitRequest,
     SessionLostCardRequest,
+    SessionAdminOverrideCloseRequest,
     PriceBreakdownResponse,
     SessionResponse,
     SessionLookupResponse,
 )
+
 from schemas.shift import (
     ShiftOpenRequest,
     ShiftCloseRequest,

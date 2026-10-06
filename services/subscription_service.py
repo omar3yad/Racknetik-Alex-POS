@@ -130,8 +130,13 @@ class SubscriptionService:
             )
 
         today = cairo_now().date()
-        duration = data.duration_days if (data.duration_days and not data.plan_id) else plan.duration_days
-        end_date = data.start_date + timedelta(days=duration)
+        if data.end_date:
+            end_date = data.end_date
+        else:
+            import calendar
+            last_day_num = calendar.monthrange(data.start_date.year, data.start_date.month)[1]
+            end_date = date(data.start_date.year, data.start_date.month, last_day_num)
+
         status = SubscriptionStatus.ACTIVE if data.start_date <= today else SubscriptionStatus.PENDING
 
         subscription = await self.subscription_repo.create(
@@ -194,13 +199,22 @@ class SubscriptionService:
             raise PlanNotActiveError("Subscription plan is not active")
 
         today = cairo_now().date()
-        if old_sub.end_date >= today:
-            new_start = old_sub.end_date
+        if data.start_date:
+            new_start = data.start_date
+        elif old_sub.end_date >= today:
+            new_start = old_sub.end_date + timedelta(days=1)
         else:
             new_start = today
 
-        new_end = new_start + timedelta(days=plan.duration_days)
+        if data.end_date:
+            new_end = data.end_date
+        else:
+            import calendar
+            last_day_num = calendar.monthrange(new_start.year, new_start.month)[1]
+            new_end = date(new_start.year, new_start.month, last_day_num)
+
         new_status = SubscriptionStatus.ACTIVE if new_start <= today else SubscriptionStatus.PENDING
+
 
         new_sub = await self.subscription_repo.create(
             subscriber_id=old_sub.subscriber_id,

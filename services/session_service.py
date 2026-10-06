@@ -314,5 +314,74 @@ class SessionService:
             await self.db.commit()
             await self.db.refresh(session)
 
+    async def admin_override_close_session(
+        self,
+        session_id: int,
+        admin_id: int,
+        amount_charged_egp: float = 0.0,
+        override_note: str | None = None,
+    ) -> ParkingSession:
+        """Allows an admin to close an active session without requiring an active shift,
+        setting a custom/zero fee, recording override notes, freeing the card, and writing audit logs."""
+        async with self._lock:
+            await self.db.rollback()
+            session = await self.session_repo.get_by_id_for_update(session_id)
+            if not session:
+                raise SessionNotFoundError("Session not found")
+
+            if session.status != SessionStatus.ACTIVE:
+                raise SessionNotActiveError("Session is not active")
+
+            exit_time = datetime.utcnow()
+            before_state = {
+                "id": session.id,
+                "status": session.status.value if hasattr(session.status, "value") else str(session.status),
+                "amount_charged": session.amount_charged,
+                "exit_time": str(session.exit_time),
+            }
+
+            amount_piastres = max(0, round(amount_charged_egp * 100))
+
+            session.status = SessionStatus.COMPLETED
+            session.exit_time = exit_time
+            session.exit_operator_id = admin_id
+            session.admin_override_by = admin_id
+            session.admin_override_note = override_note or "إغلاق وتسوية إدارية"
+            session.duration_minutes = math.ceil(
+                (exit_time - session.entry_time).total_seconds() / 60
+            )
+            session.amount_charged = amount_piastres
+            session.is_paid = True
+            session.pricing_rule_id = None
+
+            # Free card back to AVAILABLE if not a subscribed card
+            if not session.is_subscribed:
+                result = await self.db.execute(
+                    select(ParkingCard).where(ParkingCard.id == session.card_id).limit(1)
+                )
+                card = result.scalars().first()
+                if card:
+                    await self.card_service.set_status(card, CardStatus.AVAILABLE)
+
+            await self.db.commit()
+            await self.db.refresh(session)
+
+            await self.audit_service.log(
+                actor_id=admin_id,
+                action="ADMIN_SESSION_CLOSED",
+                entity_type="parking_session",
+                entity_id=session.id,
+                before=before_state,
+                after={
+                    "status": "COMPLETED",
+                    "exit_time": exit_time.isoformat(),
+                    "amount_charged": session.amount_charged,
+                    "admin_override_by": admin_id,
+                    "admin_override_note": session.admin_override_note,
+                },
+            )
+            return session
+
 
 __all__ = ["SessionService", "SessionOpenResult"]
+

@@ -117,6 +117,48 @@
     </dl>
   </div>
 
+  <!-- Admin Override Action Box for ACTIVE sessions -->
+  {% if session.status.value == 'ACTIVE' or session.status == 'ACTIVE' %}
+  <div class="bg-gradient-to-l from-amber-950/50 to-gray-850 border border-amber-500/40 rounded-xl p-6 shadow space-y-4">
+    <div class="flex items-center justify-between border-b border-gray-700/60 pb-3">
+      <h2 class="text-base font-bold text-amber-300 flex items-center gap-2">
+        <span>⚙️</span>
+        <span>إغلاق وتسوية الجلسة إدارياً (تصفير الحساب / تحرير الكرت)</span>
+      </h2>
+      <span class="text-xs text-amber-200 bg-amber-900/60 border border-amber-700/50 px-2.5 py-1 rounded-full font-medium">خاص بالإدارة</span>
+    </div>
+
+    <p class="text-xs text-gray-300">
+      يمكنك كمسؤول إنهاء هذه الجلسة وتحديد المبلغ المحصل (مثلاً ٠ ج.م لإلغاء أي رسوم خاطئة وتجنب التأثير على التقارير المالية)، وسيتم تحرير الكرت فوراً ليصبح متاحاً للاستخدام.
+    </p>
+
+    <div id="detailAlertError" class="hidden bg-red-950/60 border border-red-500/60 text-red-300 px-3 py-2 rounded-lg text-xs"></div>
+
+    <form id="detailOverrideForm" onsubmit="handleDetailOverride(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">المبلغ المحصل الفعلي (ج.م)</label>
+        <input type="number" step="0.01" min="0" id="detailAmountPaid" value="0.00" required
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3.5 py-2.5 text-white font-mono text-base focus:outline-none focus:border-amber-500">
+        <p class="text-xs text-gray-500 mt-1">اتركه 0.00 لتصفير الحساب</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-300 mb-1">سبب الإغلاق / الملاحظة الإدارية</label>
+        <input type="text" id="detailOverrideNote" value="كارت مسجل بالخطأ - تسوية إدارية" required
+          class="w-full bg-gray-900 border border-gray-700 rounded-lg px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500">
+        <p class="text-xs text-gray-500 mt-1">سيتم حفظ السبب في سجل التدقيق والملاحظات</p>
+      </div>
+
+      <div class="flex items-end pb-4">
+        <button type="submit" id="detailSubmitBtn"
+          class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-2.5 px-4 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-900/40">
+          <span>تأكيد الإغلاق وتحرير الكرت</span>
+        </button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
   <!-- Audit Log Section -->
   <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl shadow overflow-hidden">
     <div class="p-4 border-b border-gray-700 flex items-center justify-between">
@@ -157,4 +199,42 @@
     </div>
   </div>
 </div>
+
+<script>
+async function handleDetailOverride(e) {
+  e.preventDefault();
+  var amount = parseFloat(document.getElementById('detailAmountPaid').value) || 0;
+  var note = document.getElementById('detailOverrideNote').value.trim();
+  var btn = document.getElementById('detailSubmitBtn');
+  var errDiv = document.getElementById('detailAlertError');
+
+  btn.disabled = true;
+  errDiv.classList.add('hidden');
+
+  try {
+    var res = await fetch('/api/v1/admin/sessions/{{ session.id }}/override-close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount_charged_egp: amount,
+        override_note: note
+      })
+    });
+
+    var data = await res.json();
+    if (res.ok && data.success) {
+      window.location.reload();
+    } else {
+      errDiv.innerText = data.detail || data.message || 'حدث خطأ أثناء إغلاق الجلسة';
+      errDiv.classList.remove('hidden');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    errDiv.innerText = 'تعذر الاتصال بالخادم';
+    errDiv.classList.remove('hidden');
+    btn.disabled = false;
+  }
+}
+</script>
 {% endblock %}
+

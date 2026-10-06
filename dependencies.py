@@ -57,13 +57,14 @@ async def get_current_user(
 async def require_operator(
     user: User = Depends(get_current_user),
 ) -> User:
-    if user.role != UserRole.OPERATOR:
+    if user.role not in (UserRole.OPERATOR, UserRole.ADMIN):
         raise HTTPException(
             status_code=403,
             detail="Insufficient permissions",
             headers={"X-Error-Code": "INSUFFICIENT_PERMISSIONS"},
         )
     return user
+
 
 async def require_admin(
     user: User = Depends(get_current_user),

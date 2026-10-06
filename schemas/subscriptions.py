@@ -99,8 +99,9 @@ class SubscriptionCreate(BaseModel):
     plan_id: int | None = None
     card_id: int | None = None
     card_code: str | None = None
-    duration_days: int | None = Field(30, ge=1)
+    duration_days: int | None = Field(None, ge=1)
     start_date: date
+    end_date: date | None = None
     amount_paid_egp: float = Field(ge=0)
     notes: str | None = None
 
@@ -111,12 +112,15 @@ class SubscriptionCreate(BaseModel):
 
 class SubscriptionRenew(BaseModel):
     plan_id: int | None = Field(None, gt=0)
+    start_date: date | None = None
+    end_date: date | None = None
     amount_paid_egp: float = Field(ge=0)
     notes: str | None = None
 
     @property
     def amount_paid_piastres(self) -> int:
         return round(self.amount_paid_egp * 100)
+
 
 
 class SubscriptionCancel(BaseModel):

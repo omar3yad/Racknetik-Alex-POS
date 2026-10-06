@@ -30,22 +30,30 @@ from schemas import (
     PaginatedResponse,
     ReportFilters,
     SessionResponse,
+    SessionAdminOverrideCloseRequest,
     ShiftFilters,
     ShiftResponse,
     ShiftSummaryResponse,
 )
 from services import (
     AuditService,
+    CardService,
+    PlateService,
+    PricingService,
     ReportService,
+    SessionService,
     ShiftService,
     SubscriptionService,
 )
 from services.exceptions import (
     ShiftAlreadyClosedError,
     ShiftNotFoundError,
+    SessionNotFoundError,
+    SessionNotActiveError,
 )
 from utils.csv_export import generate_sessions_csv
 from utils.time import cairo_date_str
+
 
 router = APIRouter(
     prefix="/api/v1/admin",
@@ -247,6 +255,64 @@ async def get_session_detail(
         audit_logs=audit_responses,
     )
     return {"data": detail.model_dump()}
+
+
+@router.post("/sessions/{session_id}/override-close")
+async def admin_override_close_session(
+    session_id: int,
+    payload: SessionAdminOverrideCloseRequest,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    card_service = CardService(db)
+    session_repo = ParkingSessionRepository(db)
+    pricing_service = PricingService(db)
+    audit_service = AuditService(db)
+    shift_service = ShiftService(db, audit_service)
+    plate_service = PlateService()
+
+    session_service = SessionService(
+        db=db,
+        card_service=card_service,
+        session_repo=session_repo,
+        pricing_service=pricing_service,
+        shift_service=shift_service,
+        audit_service=audit_service,
+        plate_service=plate_service,
+    )
+
+    try:
+        session = await session_service.admin_override_close_session(
+            session_id=session_id,
+            admin_id=current_user.id,
+            amount_charged_egp=payload.amount_charged_egp,
+            override_note=payload.override_note,
+        )
+    except SessionNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+            headers={"X-Error-Code": "SESSION_NOT_FOUND"},
+        )
+    except SessionNotActiveError as e:
+        raise HTTPException(
+            status_code=409,
+            detail=str(e),
+            headers={"X-Error-Code": "SESSION_NOT_ACTIVE"},
+        )
+
+    return {
+        "success": True,
+        "message": "تم إغلاق الجلسة وتحرير الكرت بنجاح",
+        "data": {
+            "session_id": session.id,
+            "card_code": session.card_code,
+            "status": session.status.value,
+            "amount_charged": session.amount_charged,
+            "admin_override_note": session.admin_override_note,
+        },
+    }
+
 
 
 # ---------------------------------------------------------------------------

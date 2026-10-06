@@ -16,6 +16,12 @@ class SessionLostCardRequest(BaseModel):
     plate_number: str = Field(min_length=1, max_length=30)
     notes: str | None = None
 
+class SessionAdminOverrideCloseRequest(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    amount_charged_egp: float = Field(0.0, ge=0)
+    override_note: str | None = None
+
+
 # Response Schemas
 class PriceBreakdownResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
