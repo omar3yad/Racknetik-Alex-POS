@@ -55,9 +55,12 @@
     <!-- Card 3: Revenue Today -->
     <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
       <p class="text-xs text-gray-400 font-medium">{{ t("admin.dashboard.revenue_today") }}</p>
-      <p id="stat-revenue-today" class="text-2xl font-bold text-emerald-400 mt-2">
-        {{ stats.revenue_today_piastres | format_egp }}
-      </p>
+      <div class="flex items-baseline gap-1.5 mt-2">
+        <span id="stat-revenue-today" class="text-2xl font-bold text-emerald-400">
+          {{ stats.revenue_today_piastres | format_egp }}
+        </span>
+        <span class="text-xs font-normal text-gray-400">ج.م</span>
+      </div>
     </div>
 
     <!-- Card 4: Open Shifts -->
@@ -117,9 +120,9 @@
             </td>
             <td class="p-3 font-bold text-emerald-400">
               {% if s.closing_cash_egp is not none %}
-                {{ s.closing_cash_egp | format_egp }}
+                <span>{{ s.closing_cash_egp | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
               {% else %}
-                {{ (session_totals.get(s.id, 0)) | format_egp }}
+                <span>{{ (session_totals.get(s.id, 0)) | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
               {% endif %}
             </td>
             <td class="p-3">
@@ -181,7 +184,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/admin_dashboard.js"></script>
+<script src="/static/js/admin_dashboard.js?v=20261028_v1"></script>
 <script>
   startAutoRefresh('/api/v1/admin/stats/live', '/api/v1/admin/stats/gates', 30000);
 </script>

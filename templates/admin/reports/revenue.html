@@ -111,7 +111,10 @@
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
     <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
       <p class="text-xs text-gray-400 font-medium">إجمالي الإيرادات</p>
-      <p class="text-2xl font-bold text-emerald-400 mt-2">{{ summary.total_revenue_piastres | format_egp }}</p>
+      <div class="flex items-baseline gap-1.5 mt-2">
+        <span class="text-2xl font-bold text-emerald-400">{{ summary.total_revenue_piastres | format_egp }}</span>
+        <span class="text-xs font-normal text-gray-400">ج.م</span>
+      </div>
     </div>
     <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
       <p class="text-xs text-gray-400 font-medium">إجمالي الجلسات</p>
@@ -123,7 +126,10 @@
     </div>
     <div class="bg-gray-800/80 border border-gray-700/60 rounded-xl p-5 shadow">
       <p class="text-xs text-gray-400 font-medium">متوسط قيمة التذكرة</p>
-      <p class="text-2xl font-bold text-cyan-400 mt-2">{{ summary.avg_revenue_piastres | format_egp }}</p>
+      <div class="flex items-baseline gap-1.5 mt-2">
+        <span class="text-2xl font-bold text-cyan-400">{{ summary.avg_revenue_piastres | format_egp }}</span>
+        <span class="text-xs font-normal text-gray-400">ج.م</span>
+      </div>
     </div>
   </div>
 
@@ -160,7 +166,7 @@
                 </div>
               </td>
               <td class="p-3 text-indigo-300">{{ st.session_count | to_arabic_indic }}</td>
-              <td class="p-3 font-bold text-emerald-400">{{ st.total_piastres | format_egp }}</td>
+              <td class="p-3 font-bold text-emerald-400"><span>{{ st.total_piastres | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span></td>
               <td class="p-3">
                 <div class="flex items-center gap-2">
                   <div class="w-16 bg-gray-700 rounded-full h-2 overflow-hidden">
@@ -199,7 +205,7 @@
             <tr class="hover:bg-gray-700/30">
               <td class="p-3 font-semibold text-white">{{ op.operator_name }}</td>
               <td class="p-3 text-indigo-300">{{ op.session_count | to_arabic_indic }}</td>
-              <td class="p-3 font-bold text-emerald-400">{{ op.total_piastres | format_egp }}</td>
+              <td class="p-3 font-bold text-emerald-400"><span>{{ op.total_piastres | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span></td>
             </tr>
             {% else %}
             <tr>
@@ -231,7 +237,7 @@
           <tr class="hover:bg-gray-700/30 {{ 'text-gray-500' if d.session_count == 0 else '' }}">
             <td class="p-3 font-mono font-medium {{ 'text-gray-500' if d.session_count == 0 else 'text-white' }}">{{ d.date_str }}</td>
             <td class="p-3 {{ 'text-gray-500' if d.session_count == 0 else 'text-indigo-300' }}">{{ d.session_count | to_arabic_indic }}</td>
-            <td class="p-3 font-bold {{ 'text-gray-500' if d.session_count == 0 else 'text-emerald-400' }}">{{ d.total_piastres | format_egp }}</td>
+            <td class="p-3 font-bold {{ 'text-gray-500' if d.session_count == 0 else 'text-emerald-400' }}"><span>{{ d.total_piastres | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span></td>
           </tr>
           {% else %}
           <tr>

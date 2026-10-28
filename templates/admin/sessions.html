@@ -138,8 +138,13 @@
             </td>
             <td class="p-3 text-gray-400 text-xs">{{ s.entry_time | format_datetime }}</td>
             <td class="p-3 text-gray-400 text-xs">{{ s.exit_time | format_datetime if s.exit_time else "—" }}</td>
-            <td class="p-3 text-gray-300">{{ s.duration_minutes | format_duration if s.duration_minutes is not none else "—" }}</td>
-            <td class="p-3 font-semibold text-emerald-400">{{ s.amount_charged | format_egp if s.amount_charged is not none else "—" }}</td>
+            <td class="p-3 font-semibold text-emerald-400">
+              {% if s.amount_charged is not none %}
+                <span>{{ s.amount_charged | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
             <td class="p-3 text-center" onclick="event.stopPropagation()">
               {% if s.status.value == 'ACTIVE' or s.status == 'ACTIVE' %}
               <button type="button" 

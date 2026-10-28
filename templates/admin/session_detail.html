@@ -77,7 +77,13 @@
 
       <div class="flex justify-between border-b border-gray-700/30 pb-2">
         <dt class="text-gray-400">المبلغ المحسوب</dt>
-        <dd class="font-bold text-emerald-400">{{ session.amount_charged | format_egp if session.amount_charged is not none else "—" }}</dd>
+        <dd class="font-bold text-emerald-400">
+          {% if session.amount_charged is not none %}
+            <span>{{ session.amount_charged | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
+          {% else %}
+            —
+          {% endif %}
+        </dd>
       </div>
 
       <div class="flex justify-between border-b border-gray-700/30 pb-2">
@@ -87,7 +93,13 @@
 
       <div class="flex justify-between border-b border-gray-700/30 pb-2">
         <dt class="text-gray-400">غرامة الفقدان</dt>
-        <dd class="text-white">{{ session.lost_card_penalty_applied | format_egp if session.lost_card_penalty_applied is not none else "—" }}</dd>
+        <dd class="text-white">
+          {% if session.lost_card_penalty_applied is not none %}
+            <span>{{ session.lost_card_penalty_applied | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
+          {% else %}
+            —
+          {% endif %}
+        </dd>
       </div>
 
       <div class="flex justify-between border-b border-gray-700/30 pb-2">

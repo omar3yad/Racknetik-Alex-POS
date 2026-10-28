@@ -110,10 +110,20 @@
             <td class="p-3 text-gray-300">بوابة {{ s.gate_number | to_arabic_indic }}</td>
             <td class="p-3 text-gray-400 text-xs">{{ s.started_at | format_datetime }}</td>
             <td class="p-3 text-gray-400 text-xs">{{ s.ended_at | format_datetime if s.ended_at else "مفتوح" }}</td>
-            <td class="p-3 font-semibold text-emerald-400">{{ computed | format_egp }}</td>
-            <td class="p-3 font-semibold text-white">{{ s.closing_cash_egp | format_egp if s.closing_cash_egp is not none else "—" }}</td>
+            <td class="p-3 font-semibold text-emerald-400"><span>{{ computed | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span></td>
+            <td class="p-3 font-semibold text-white">
+              {% if s.closing_cash_egp is not none %}
+                <span>{{ s.closing_cash_egp | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
             <td class="p-3 font-semibold {{ discrepancy | discrepancy_class(computed) }}">
-              {{ discrepancy | format_egp if discrepancy is not none else "—" }}
+              {% if discrepancy is not none %}
+                <span>{{ discrepancy | format_egp }}</span> <span class="text-xs font-normal text-gray-400 mr-1">ج.م</span>
+              {% else %}
+                —
+              {% endif %}
             </td>
             <td class="p-3">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/50' if not s.ended_at else 'bg-gray-700 text-gray-300' }}">
